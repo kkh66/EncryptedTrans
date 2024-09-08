@@ -4,7 +4,11 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -32,18 +36,5 @@ class Utils {
     fun passwordsMatch(password: String, confirmPassword: String): Boolean {
         return password == confirmPassword
     }
-    
-}
 
-@Composable
-fun BorderColum(modifier: Modifier = Modifier, Text: String) {
-    Column(
-        modifier
-            .border(2.dp, Color.White)
-            .padding(16.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-        Text("")
-    }
 }

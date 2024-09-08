@@ -12,6 +12,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SearchBar
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -31,114 +32,11 @@ import com.example.encryptedtrans.ui.theme.EncryptedTransTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FileShareApp(modifier: Modifier = Modifier, navController: NavHostController) {
-    Scaffold(contentWindowInsets = WindowInsets(top = (0.dp)), topBar = {
-        CenterAlignedTopAppBar(
-            title = {
-                Text("Protect,Encrypt,Deliver", fontSize = 20.sp)
-            },
-            modifier
-                .padding(0.dp)
-                .fillMaxWidth()
-                .statusBarsPadding(),
-            windowInsets = WindowInsets(top = (0.dp))
-        )
-    }, bottomBar = {
-        BottomAppBar(
-            modifier.background(color = Color.Transparent), containerColor = Color.Transparent
-        ) {
-            Column {
-                HorizontalDivider(
-                    color = Color.Gray, thickness = 1.dp
-                )
-                ButtonUse(modifier, navController)
-            }
-        }
-    }
-
-    ) { innerPadding ->
-        Surface(modifier.padding(innerPadding)) {
-            UserProfile(modifier, viewmodel = UserProfileViewmodel(auth = Auth()), navController)
-        }
+fun FileShareApp() {
+    Column(){
+        Text("Home")
 
     }
 }
 
-
-@Composable
-fun ButtonUse(
-    modifier: Modifier = Modifier,
-    navController: NavHostController
-) {
-
-    Row {
-        Column(
-            modifier.width(130.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Button(
-                onClick = { navController.navigate(EncryptedTransScreen.Folder.name) },
-                modifier
-                    .padding(0.dp),
-                colors = ButtonDefaults.buttonColors(Color.Transparent)
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Folder,
-                    contentDescription = "Folder",
-                    modifier
-                        .padding(bottom = 0.dp)
-                        .size(40.dp),
-                    tint = Color.White
-                )
-            }
-            Text("Folder")
-        }
-        Column(
-            modifier.size(130.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally,
-
-            ) {
-            Button(
-                onClick = { EncryptedTransScreen.Home.name },
-                modifier
-                    .padding(0.dp),
-                colors = ButtonDefaults.buttonColors(Color.Transparent)
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Home,
-                    contentDescription = "Home",
-                    modifier
-                        .padding(0.dp)
-                        .size(40.dp),
-                    tint = Color.White
-                )
-            }
-            Text("Home")
-        }
-        Column(
-            modifier.width(130.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Button(
-                onClick = { EncryptedTransScreen.Account.name },
-                modifier
-                    .width(140.dp)
-                    .padding(0.dp),
-                colors = ButtonDefaults.buttonColors(Color.Transparent)
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Person, contentDescription = "Account",
-                    modifier
-                        .padding(0.dp)
-                        .size(40.dp),
-                    tint = Color.White
-                )
-            }
-            Text("Account")
-        }
-    }
-}
 

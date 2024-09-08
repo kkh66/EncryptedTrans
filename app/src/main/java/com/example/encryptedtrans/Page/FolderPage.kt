@@ -1,51 +1,75 @@
 package com.example.encryptedtrans.Page
 
-import android.net.Uri
-import android.provider.OpenableColumns
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.core.content.ContentResolverCompat
-import com.example.encryptedtrans.utils.BorderColum
-import com.example.encryptedtrans.utils.Utils
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import com.example.encryptedtrans.ui.theme.EncryptedTransTheme
+
 
 @Composable
-fun Folder(modifier: Modifier=Modifier){
-    // This state holds the file URI that the user selects
-    var selectedFileUri by remember { mutableStateOf<Uri?>(null) }
-    var fileName by remember { mutableStateOf("") }
-
-    // Set up the ActivityResultLauncher to handle the file picking intent
-    val filePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent(), // ACTION_GET_CONTENT
-        onResult = { uri: Uri? ->
-            selectedFileUri = uri
-
-            // Optionally, get file details like name and size
-            uri?.let {
-                //fileName = it.getFileName() // Fetch the file name
-            }
+fun Folder(modifier: Modifier = Modifier) {
+    Box(
+        modifier
+            .padding(top = 0.dp, bottom = 5.dp, start = 3.dp, end = 3.dp)
+            .border(width = 2.dp, Color.White)
+            .fillMaxSize()
+    ) {
+        Column(
+            modifier
+                .align(Alignment.TopStart),
+            verticalArrangement = Arrangement.Top,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                "Folder",
+                modifier
+                    .padding(top = 3.dp),
+                color = Color.White,
+            )
+            HorizontalDivider(
+                modifier = Modifier
+                    .padding(start = 10.dp, end = 10.dp, top = 0.dp, bottom = 8.dp)
+                    .fillMaxWidth(),
+                color = Color.Gray, thickness = 2.dp
+            )
         }
-    )
-    Box(modifier.fillMaxSize()){
-        Column(verticalArrangement = Arrangement.Bottom, horizontalAlignment = Alignment.CenterHorizontally) {
-            Button(onClick = { /*TODO*/ }) {
+        Column(
+            modifier.align(Alignment.BottomCenter),
+            verticalArrangement = Arrangement.Bottom,
+        ) {
+            Button(
+                onClick = { },
+                modifier
+                    .fillMaxWidth()
+                    .padding(start = 10.dp, end = 10.dp, bottom = 3.dp)
+            ) {
                 Text("Upload File")
             }
         }
     }
 }
+
+
+@Preview
+@Composable
+fun FolderPreview() {
+    EncryptedTransTheme {
+        Folder()
+    }
+}
+
+
 
