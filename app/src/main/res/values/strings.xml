@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">EncryptedTrans</string>
+    <string name="test">Test using: %d</string>
+    <string name="google_web_client">1067112268733-prv8drgckcc6t4qajqk79eit5fpl3vof.apps.googleusercontent.com</string>
 </resources>

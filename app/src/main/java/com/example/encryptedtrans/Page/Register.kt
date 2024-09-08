@@ -1,83 +1,137 @@
 package com.example.encryptedtrans.Page
 
-import androidx.compose.foundation.background
+import com.example.encryptedtrans.Viewmodels.RegisterViewModel
+import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonColors
-import androidx.compose.material3.Label
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.encryptedtrans.ui.theme.EncryptedTransTheme
+import androidx.navigation.NavController
+import com.example.encryptedtrans.R
 
 @Composable
-fun Register(modifier: Modifier = Modifier) {
-    var Username by remember { mutableStateOf("") }
-    var Email by remember {
-        mutableStateOf("")
-    }
-    var New_Password by remember { mutableStateOf("") }
-    var Confirm_Password by remember { mutableStateOf("") }
-    Column(
-        modifier = Modifier
-            .fillMaxHeight()
-            .padding(12.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
+fun Register(
+    viewModel: RegisterViewModel,
+    navController: NavController,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
 
-        OutlinedTextField(
-            value = Username,
-            onValueChange = { Username = it },
-            label = { Text("Username") }
-        )
-        OutlinedTextField(
-            value = Email,
-            onValueChange = { Email = it },
-            label = { Text("Email") })
-        OutlinedTextField(
-            value = New_Password,
-            onValueChange = { New_Password = it },
-            label = { Text("Password") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            visualTransformation = PasswordVisualTransformation(),
-        )
-        OutlinedTextField(
-            value = Confirm_Password,
-            onValueChange = { Confirm_Password = it },
-            label = { Text("Confirm Password") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
-        )
-        Button(onClick = { /*TODO*/ }
-        ) {
-            Text("Register")
-
+    LaunchedEffect(viewModel.errorMessage) {
+        viewModel.errorMessage?.let {
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
         }
     }
-}
 
-
-@Preview(showBackground = true)
-@Composable
-fun RegisterPreview() {
-    EncryptedTransTheme {
-        Register()
+    LaunchedEffect(viewModel.isRegistrationSuccessful) {
+        if (viewModel.isRegistrationSuccessful) {
+            Toast.makeText(context, "Registration successful!", Toast.LENGTH_SHORT).show()
+            navController.navigate("login")
+        }
     }
+    Box(
+        modifier = modifier
+            .fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier
+                .padding(16.dp)
+                .fillMaxHeight(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.logo_company_removebg_preview),
+                contentDescription = "Company Logo",
+                modifier.size(300.dp)
+            )
+            OutlinedTextField(
+                value = viewModel.username,
+                onValueChange = { viewModel.username = it },
+                modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(25),
+                label = { Text("Username") }
+            )
+            Spacer(modifier.height(5.dp))
+            OutlinedTextField(
+                value = viewModel.email,
+                onValueChange = { viewModel.email = it },
+                modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(25),
+                label = { Text("Email") }
+            )
+            Spacer(modifier.height(5.dp))
+            OutlinedTextField(
+                value = viewModel.password,
+                onValueChange = { viewModel.password = it },
+                modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(25),
+                label = { Text("Password") },
+                visualTransformation = PasswordVisualTransformation()
+            )
+            Spacer(modifier.height(5.dp))
+            OutlinedTextField(
+                value = viewModel.confirmPassword,
+                onValueChange = { viewModel.confirmPassword = it },
+                modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(25),
+                label = { Text("Confirm Password") },
+                visualTransformation = PasswordVisualTransformation()
+            )
+            Box(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .height(50.dp)
+                    .padding(top = 10.dp)
+            ) {
+                if (viewModel.isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .size(40.dp) // Adjust size as needed
+                    )
+                } else {
+                    Button(
+                        onClick = { viewModel.register() },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Register")
+                    }
+                }
+            }
+        }
+        Column(
+            modifier
+                .align(Alignment.BottomCenter),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            TextButton(onClick = { navController.navigate("login") }) {
+                Text("Already have an Account? Sign In")
+            }
+        }
+    }
+
+
 }
