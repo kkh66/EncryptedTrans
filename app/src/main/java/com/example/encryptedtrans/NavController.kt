@@ -38,10 +38,12 @@ fun NavControl(
         startDestination = check_login,
         builder = {
             composable(EncryptedTransScreen.Login.name) {
-                Login(navController, viewModel = viewModel { LoginViewModel(Auth()) })
+                Login(navController,
+                    viewModel = viewModel { LoginViewModel(Auth()) }
+                )
             }
             composable(EncryptedTransScreen.Main.name) {
-                MainPage(modifier)
+                MainPage(modifier, navController)
             }
             composable(EncryptedTransScreen.Register.name) {
                 Register(

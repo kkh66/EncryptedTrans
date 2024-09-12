@@ -2,7 +2,8 @@ package com.example.encryptedtrans.data
 
 import com.google.gson.annotations.SerializedName
 
-data class virustotalanalysisresult(
+
+data class VirusTotalAnalysisResult(
     val malicious: Int,
     val suspicious: Int,
     val undetected: Int,
@@ -14,4 +15,3 @@ data class virustotalanalysisresult(
     @SerializedName("type-unsupported")
     val typeUnsupported: Int
 )
-

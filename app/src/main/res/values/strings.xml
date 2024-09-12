@@ -1,5 +1,4 @@
 <resources>
     <string name="app_name">EncryptedTrans</string>
-    <string name="test">Test using: %d</string>
-    <string name="google_web_client">1067112268733-prv8drgckcc6t4qajqk79eit5fpl3vof.apps.googleusercontent.com</string>
+    <string name="Virus_Total_key">a39401798e8096ce3d699c944a5a858b1ea305a2fba28e0e657a613ab93d28aa</string>
 </resources>

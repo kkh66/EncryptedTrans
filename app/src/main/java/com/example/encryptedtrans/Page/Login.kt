@@ -2,6 +2,8 @@ package com.example.encryptedtrans.Page
 
 import com.example.encryptedtrans.Viewmodels.LoginViewModel
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,6 +23,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -32,12 +36,29 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.navigation.NavController
 import com.example.encryptedtrans.EncryptedTransScreen
 import com.example.encryptedtrans.R
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 
 @Composable
 fun Login(
     navController: NavController, viewModel: LoginViewModel, modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+
+    val googleSignInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+        try {
+            val account = task.getResult(ApiException::class.java)
+            account?.idToken?.let { token ->
+                viewModel.signInWithGoogle(token)
+            }
+        } catch (e: ApiException) {
+            Toast.makeText(context, "Google sign-in failed", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     LaunchedEffect(viewModel.errorMessage) {
         viewModel.errorMessage?.let {
@@ -89,7 +110,7 @@ fun Login(
                         CircularProgressIndicator(
                             modifier = Modifier
                                 .align(Alignment.Center)
-                                .size(50.dp) // Adjust size as needed
+                                .size(50.dp)
                         )
                     } else {
                         Button(
@@ -112,7 +133,14 @@ fun Login(
             }
             HorizontalDivider(color = Color.White, thickness = 2.dp)
             Button(
-                onClick = { },
+                onClick = {
+                    val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                        .requestIdToken(context.getString(R.string.default_web_client_id))
+                        .requestEmail()
+                        .build()
+                    val googleSignInClient = GoogleSignIn.getClient(context, gso)
+                    googleSignInLauncher.launch(googleSignInClient.signInIntent)
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(60.dp)
@@ -137,7 +165,6 @@ fun Login(
                     contentDescription = "Facebook",
                     modifier
                         .size(30.dp)
-
                         .fillMaxWidth()
                 )
                 Text("Continue with Facebook", modifier.padding(start = 10.dp))

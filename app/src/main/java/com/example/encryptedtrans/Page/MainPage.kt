@@ -1,17 +1,16 @@
 package com.example.encryptedtrans.Page
 
+import android.app.Application
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Home
@@ -24,32 +23,35 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavHostController
+import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.encryptedtrans.Auth
 import com.example.encryptedtrans.EncryptedTransScreen
-import com.example.encryptedtrans.NavControl
+import com.example.encryptedtrans.Viewmodels.FileViewModel
 import com.example.encryptedtrans.Viewmodels.UserProfileViewmodel
-import com.example.encryptedtrans.ui.theme.EncryptedTransTheme
+import io.github.vinceglb.filekit.core.FileKitPlatformSettings
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainPage(modifier: Modifier) {
+fun MainPage(
+    modifier: Modifier,
+    navController: NavController,
+    platformSettings: FileKitPlatformSettings? = null
+) {
     val mainNavController = rememberNavController()
     Scaffold(
-        modifier = Modifier.padding(0.dp),
+
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
@@ -58,7 +60,9 @@ fun MainPage(modifier: Modifier) {
                 modifier
                     .fillMaxWidth()
                     .padding(0.dp)
-                    .height(30.dp)
+                    .background(color = Color.Transparent)
+                    .statusBarsPadding(),
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.Transparent)
             )
         },
         contentWindowInsets = WindowInsets(0.dp),
@@ -153,7 +157,7 @@ fun MainPage(modifier: Modifier) {
                 .padding(paddingValues)
         ) {
             composable(EncryptedTransScreen.Folder.name) {
-                Folder()
+                Folder(modifier, viewmodel = FileViewModel(), platformSettings)
             }
             composable(EncryptedTransScreen.Home.name) {
                 FileShareApp()
@@ -161,18 +165,9 @@ fun MainPage(modifier: Modifier) {
             composable(EncryptedTransScreen.Account.name) {
                 UserProfile(
                     viewmodel = UserProfileViewmodel(Auth()),
-                    navController = mainNavController
+                    navController = navController
                 )
             }
         }
-    }
-}
-
-
-@Preview
-@Composable
-fun MainPreview() {
-    EncryptedTransTheme {
-        MainPage(modifier = Modifier)
     }
 }

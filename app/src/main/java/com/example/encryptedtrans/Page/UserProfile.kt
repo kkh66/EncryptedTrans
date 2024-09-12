@@ -1,5 +1,6 @@
 package com.example.encryptedtrans.Page
 
+import android.widget.Toast
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,20 +20,22 @@ import androidx.compose.ui.AbsoluteAlignment
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.rememberNavController
+import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.example.encryptedtrans.EncryptedTransScreen
 import com.example.encryptedtrans.Viewmodels.UserProfileViewmodel
-import com.example.encryptedtrans.ui.theme.EncryptedTransTheme
 
 @Composable
 fun UserProfile(
     modifier: Modifier = Modifier,
     viewmodel: UserProfileViewmodel,
-    navController: NavHostController
+    navController: NavController
 ) {
+    val username = viewmodel.getUsername()
+    val context = LocalContext.current
     Box(
         modifier
             .padding(top = 0.dp, bottom = 5.dp, start = 3.dp, end = 3.dp)
@@ -53,6 +56,7 @@ fun UserProfile(
                     .fillMaxWidth(),
                 color = Color.White, thickness = 5.dp
             )
+            Text("Username: $username", fontSize = 20.sp, color = Color.White)
 
             Button(
                 onClick = { /*TODO*/ },
@@ -72,6 +76,7 @@ fun UserProfile(
             Button(
                 onClick = {
                     viewmodel.logout()
+                    Toast.makeText(context, "Logout Successful", Toast.LENGTH_SHORT).show()
                     navController.navigate(EncryptedTransScreen.Login.name)
                 },
                 modifier

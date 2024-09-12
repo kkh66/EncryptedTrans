@@ -48,3 +48,4 @@ fun QrPreview() {
         UsingQr()
     }
 }
+

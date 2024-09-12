@@ -17,10 +17,12 @@ import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.encryptedtrans.ui.theme.EncryptedTransTheme
+import io.github.vinceglb.filekit.core.FileKit
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        FileKit.init(this)
         enableEdgeToEdge()
         setContent {
             EncryptedTransTheme() {

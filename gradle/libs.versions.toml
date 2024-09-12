@@ -1,7 +1,10 @@
 [versions]
 agp = "8.5.2"
+converterGson = "2.11.0"
 core = "3.5.3"
 facebookCore = "latest.release"
+filekitCompose = "0.8.2"
+filekitCore = "0.8.2"
 filepicker = "$libVersio"
 filepickerVersion = "0.2.5"
 gson = "2.11.0"
@@ -12,7 +15,7 @@ junitVersion = "1.2.1"
 espressoCore = "3.6.1"
 lifecycleRuntimeKtx = "2.8.5"
 activityCompose = "1.9.2"
-composeBom = "2024.09.00"
+composeBom = "2024.09.01"
 googleGmsGoogleServices = "4.4.2"
 firebaseAuth = "23.0.0"
 navigationCompose = "2.8.0"
@@ -20,6 +23,7 @@ firebaseStorage = "21.0.0"
 firebaseStorageKtx = "21.0.0"
 firebaseDatabaseKtx = "21.0.0"
 okhttp = "4.12.0"
+retrofit = "2.11.0"
 zxingAndroidEmbedded = "4.3.0"
 firebaseFirestoreKtx = "25.1.0"
 playServicesAuth = "21.2.0"
@@ -27,11 +31,11 @@ playServicesAuth = "21.2.0"
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
+converter-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "converterGson" }
 core = { module = "com.google.zxing:core", version.ref = "core" }
 facebook-core = { module = "com.facebook.android:facebook-core", version.ref = "facebookCore" }
-filepicker = { module = "io.github.chochanaresh:filepicker", version.ref = "filepicker" }
-filepicker-v025 = { module = "io.github.chochanaresh:filepicker", version.ref = "filepickerVersion" }
-gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
+filekit-compose = { module = "io.github.vinceglb:filekit-compose", version.ref = "filekitCompose" }
+filekit-core = { module = "io.github.vinceglb:filekit-core", version.ref = "filekitCore" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
@@ -51,6 +55,7 @@ firebase-storage = { group = "com.google.firebase", name = "firebase-storage", v
 firebase-storage-ktx = { group = "com.google.firebase", name = "firebase-storage-ktx", version.ref = "firebaseStorageKtx" }
 firebase-database-ktx = { group = "com.google.firebase", name = "firebase-database-ktx", version.ref = "firebaseDatabaseKtx" }
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
+retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
 zxing-android-embedded = { module = "com.journeyapps:zxing-android-embedded", version.ref = "zxingAndroidEmbedded" }
 firebase-firestore-ktx = { group = "com.google.firebase", name = "firebase-firestore-ktx", version.ref = "firebaseFirestoreKtx" }
 play-services-auth = { group = "com.google.android.gms", name = "play-services-auth", version.ref = "playServicesAuth" }
