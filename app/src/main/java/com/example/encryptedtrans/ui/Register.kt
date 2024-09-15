@@ -1,6 +1,5 @@
-package com.example.encryptedtrans.Page
+package com.example.encryptedtrans.ui
 
-import com.example.encryptedtrans.Viewmodels.RegisterViewModel
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -25,113 +24,113 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.encryptedtrans.EncryptedTransScreen
 import com.example.encryptedtrans.R
+import com.example.encryptedtrans.viewmodel.RegisterViewModel
 
 @Composable
 fun Register(
     viewModel: RegisterViewModel,
     navController: NavController,
-    modifier: Modifier = Modifier
-) {
-    val context = LocalContext.current
 
-    LaunchedEffect(viewModel.errorMessage) {
-        viewModel.errorMessage?.let {
+    ) {
+    val context = LocalContext.current
+    val registrationSuccessfulText = stringResource(R.string.registration_successful)
+
+    LaunchedEffect(viewModel.registerState.errorMessage) {
+        viewModel.registerState.errorMessage?.let {
             Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
         }
     }
 
-    LaunchedEffect(viewModel.isRegistrationSuccessful) {
-        if (viewModel.isRegistrationSuccessful) {
-            Toast.makeText(context, "Registration successful!", Toast.LENGTH_SHORT).show()
-            navController.navigate("login")
+    LaunchedEffect(viewModel.registerState.isRegistrationSuccessful) {
+        if (viewModel.registerState.isRegistrationSuccessful) {
+            Toast.makeText(context, registrationSuccessfulText, Toast.LENGTH_SHORT).show()
+            navController.navigate(EncryptedTransScreen.Login.name)
         }
     }
+
     Box(
-        modifier = modifier
-            .fillMaxSize(),
-        contentAlignment = Alignment.Center
+        modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
     ) {
         Column(
-            modifier
+            modifier = Modifier
                 .padding(16.dp)
                 .fillMaxHeight(),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Image(
-                painter = painterResource(id = R.drawable.logo_company_removebg_preview),
-                contentDescription = "Company Logo",
-                modifier.size(300.dp)
+                painter = painterResource(id = R.drawable.logo_use),
+                contentDescription = stringResource(R.string.app_name),
+                modifier = Modifier.size(300.dp)
             )
-            OutlinedTextField(
-                value = viewModel.username,
-                onValueChange = { viewModel.username = it },
-                modifier.fillMaxWidth(),
+            OutlinedTextField(value = viewModel.username,
+                onValueChange = { viewModel.updateUsername(it) },
+                modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(25),
-                label = { Text("Username") }
-            )
-            Spacer(modifier.height(5.dp))
-            OutlinedTextField(
-                value = viewModel.email,
-                onValueChange = { viewModel.email = it },
-                modifier.fillMaxWidth(),
+                label = { Text(stringResource(R.string.username)) })
+            Spacer(modifier = Modifier.height(5.dp))
+            OutlinedTextField(value = viewModel.email,
+                onValueChange = { viewModel.updateEmail(it) },
+                modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(25),
-                label = { Text("Email") }
-            )
-            Spacer(modifier.height(5.dp))
+                label = { Text(stringResource(R.string.email)) })
+            Spacer(modifier = Modifier.height(5.dp))
             OutlinedTextField(
                 value = viewModel.password,
-                onValueChange = { viewModel.password = it },
-                modifier.fillMaxWidth(),
+                onValueChange = { viewModel.updatePassword(it) },
+                modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(25),
-                label = { Text("Password") },
+                label = { Text(stringResource(R.string.password)) },
                 visualTransformation = PasswordVisualTransformation()
             )
-            Spacer(modifier.height(5.dp))
+            Spacer(modifier = Modifier.height(5.dp))
             OutlinedTextField(
                 value = viewModel.confirmPassword,
-                onValueChange = { viewModel.confirmPassword = it },
-                modifier.fillMaxWidth(),
+                onValueChange = { viewModel.updateConfirmPassword(it) },
+                modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(25),
-                label = { Text("Confirm Password") },
+                label = { Text(stringResource(R.string.confirm_password)) },
                 visualTransformation = PasswordVisualTransformation()
             )
             Box(
-                modifier = modifier
+                modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp)
                     .padding(top = 10.dp)
             ) {
-                if (viewModel.isLoading) {
+                if (viewModel.registerState.isLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier
                             .align(Alignment.Center)
-                            .size(40.dp) // Adjust size as needed
+                            .size(40.dp)
                     )
                 } else {
                     Button(
                         onClick = { viewModel.register() },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .height(50.dp)
+                            .fillMaxWidth()
                     ) {
-                        Text("Register")
+                        Text(stringResource(R.string.register))
                     }
                 }
             }
         }
         Column(
-            modifier
+            modifier = Modifier
+                .height(50.dp)
                 .align(Alignment.BottomCenter),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             TextButton(onClick = { navController.navigate("login") }) {
-                Text("Already have an Account? Sign In")
+                Text(stringResource(R.string.already_have_account))
             }
         }
     }
-
-
 }

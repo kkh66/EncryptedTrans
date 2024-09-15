@@ -1,6 +1,6 @@
 package com.example.encryptedtrans.data
 
-data class VirusTotalFileUpload(
+data class VirusTotalFileUploadResult(
     val `data`: Data
 )
 

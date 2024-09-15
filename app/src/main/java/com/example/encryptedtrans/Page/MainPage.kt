@@ -37,8 +37,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.encryptedtrans.Auth
 import com.example.encryptedtrans.EncryptedTransScreen
-import com.example.encryptedtrans.Viewmodels.FileViewModel
-import com.example.encryptedtrans.Viewmodels.UserProfileViewmodel
+import com.example.encryptedtrans.viewmodel.FileViewModel
+import com.example.encryptedtrans.viewmodel.UserProfileViewmodel
 import io.github.vinceglb.filekit.core.FileKitPlatformSettings
 
 
@@ -157,7 +157,7 @@ fun MainPage(
                 .padding(paddingValues)
         ) {
             composable(EncryptedTransScreen.Folder.name) {
-                Folder(modifier, viewmodel = FileViewModel(), platformSettings)
+                Folder(viewmodel = FileViewModel(), platformSettings)
             }
             composable(EncryptedTransScreen.Home.name) {
                 FileShareApp()

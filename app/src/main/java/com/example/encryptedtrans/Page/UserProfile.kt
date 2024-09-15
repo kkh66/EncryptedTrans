@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.encryptedtrans.EncryptedTransScreen
-import com.example.encryptedtrans.Viewmodels.UserProfileViewmodel
+import com.example.encryptedtrans.viewmodel.UserProfileViewmodel
 
 @Composable
 fun UserProfile(

@@ -25,8 +25,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FileDownload
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -49,13 +49,9 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.encryptedtrans.Viewmodels.FileViewModel
 import com.example.encryptedtrans.data.FileRecord
-import com.example.modified_snackbar.presentation.ComposeModifiedSnackbar
+import com.example.encryptedtrans.viewmodel.FileViewModel
 import com.example.modified_snackbar.presentation.rememberComposeModifiedSnackbarState
-import com.example.modified_snackbar.util.ComposeModifiedSnackbarColor
-import com.example.modified_snackbar.util.ComposeModifiedSnackbarPosition
-import com.example.modified_snackbar.util.ComposeModifierSnackbarDuration
 import com.facebook.bolts.Task.Companion.delay
 import io.github.vinceglb.filekit.compose.rememberFilePickerLauncher
 import io.github.vinceglb.filekit.core.FileKitPlatformSettings
@@ -67,7 +63,6 @@ import io.github.vinceglb.filekit.core.PlatformFile
 
 @Composable
 fun Folder(
-    modifier: Modifier = Modifier,
     viewmodel: FileViewModel = viewModel(),
     platformSettings: FileKitPlatformSettings?
 ) {
@@ -77,7 +72,6 @@ fun Folder(
     val directory: PlatformDirectory? by remember { mutableStateOf(null) }
 
     val infiniteTransition = rememberInfiniteTransition("")
-    val state = rememberComposeModifiedSnackbarState()
     val singleFilePicker = rememberFilePickerLauncher(
         type = PickerType.File(extensions = listOf("pdf", "docx")),
         title = "Single file picker",
@@ -91,7 +85,7 @@ fun Folder(
         },
         platformSettings = platformSettings
     )
-    // Infinite rotation animation for CircularProgressIndicator
+    // animation for CircularProgressIndicator
     val rotationAngle by infiniteTransition.animateFloat(
         initialValue = 0f, targetValue = 360f, animationSpec = infiniteRepeatable(
             animation = tween(durationMillis = 1000, easing = LinearEasing),
@@ -100,18 +94,18 @@ fun Folder(
     )
 
     Box(
-        modifier
+        modifier = Modifier
             .padding(5.dp)
             .border(2.dp, Color.White)
             .fillMaxSize()
     ) {
         Column(
-            modifier.align(Alignment.TopStart),
+            modifier = Modifier.align(Alignment.TopStart),
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                "Folder", modifier.padding(3.dp), color = Color.White
+                "Folder", modifier = Modifier.padding(3.dp), color = Color.White
             )
             HorizontalDivider(
                 modifier = Modifier
@@ -131,13 +125,15 @@ fun Folder(
         }
 
         Column(
-            modifier.align(Alignment.BottomCenter), verticalArrangement = Arrangement.Bottom
+            modifier = Modifier
+                .align(Alignment.BottomCenter),
+            verticalArrangement = Arrangement.Bottom
         ) {
             Button(
                 onClick = {
                     singleFilePicker.launch()
                 },
-                modifier
+                modifier = Modifier
                     .fillMaxWidth()
                     .padding(10.dp)
             ) {
@@ -146,11 +142,12 @@ fun Folder(
         }
 
 
-        Box(Modifier.fillMaxSize()) {
+        Box(modifier = Modifier
+            .fillMaxSize()) {
             when {
                 viewmodel.isLoading -> {
                     Card(
-                        modifier
+                        modifier = Modifier
                             .size(250.dp)
                             .align(Alignment.Center),
                         shape = RoundedCornerShape(8.dp),
@@ -188,7 +185,7 @@ fun Folder(
 
                 viewmodel.completionMessage?.isNotEmpty() == true -> {
                     Card(
-                        modifier
+                        modifier = Modifier
                             .size(150.dp)
                             .align(Alignment.Center),
                         shape = RoundedCornerShape(8.dp),
@@ -228,7 +225,7 @@ fun Folder(
 
                 viewmodel.errorMessage?.isNotEmpty() == true -> {
                     Card(
-                        modifier
+                        modifier = Modifier
                             .size(150.dp)
                             .align(Alignment.Center),
                         shape = RoundedCornerShape(8.dp),
@@ -298,7 +295,7 @@ fun FileCard(fileRecord: FileRecord) {
 
             ) {
                 Icon(
-                    imageVector = Icons.Default.FileDownload, contentDescription = "Download File"
+                    imageVector = Icons.Default.Share, contentDescription = "Share File"
                 )
             }
         }

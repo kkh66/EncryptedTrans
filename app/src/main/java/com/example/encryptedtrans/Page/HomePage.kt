@@ -27,7 +27,6 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.encryptedtrans.Auth
 import com.example.encryptedtrans.EncryptedTransScreen
-import com.example.encryptedtrans.Viewmodels.UserProfileViewmodel
 import com.example.encryptedtrans.ui.theme.EncryptedTransTheme
 
 @OptIn(ExperimentalMaterial3Api::class)

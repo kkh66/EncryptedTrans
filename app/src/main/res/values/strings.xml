@@ -1,4 +1,27 @@
 <resources>
     <string name="app_name">EncryptedTrans</string>
+    <string name="username">Username</string>
+    <string name="email">Email</string>
+    <string name="password">Password</string>
+    <string name="confirm_password">Confirm Password</string>
+    <string name="login">Login</string>
+    <string name="sign_up">No Account? Sign Up</string>
+    <string name="continue_with_google">Continue with Google</string>
+    <string name="continue_with_facebook">Continue with Facebook</string>
+    <string name="login_failed">Login failed</string>
+    <string name="google_sign_in_failed">Google sign-in failed</string>
+    <string name="login_successful">Login successful!</string>
+    <string name="register">Register</string>
+    <string name="already_have_account">Already have an Account? Sign In</string>
+    <string name="registration_successful">Registration successful!</string>
     <string name="Virus_Total_key">a39401798e8096ce3d699c944a5a858b1ea305a2fba28e0e657a613ab93d28aa</string>
+    <string name="reset_password">Reset Password</string>
+    <string name="send_reset_email">Send Reset Email</string>
+    <string name="cancel">Cancel</string>
+    <string name="link_your_account">Link Your Account</string>
+    <string name="link_account">Link Account</string>
+    <string name="company_logo">Company Logo</string>
+    <string name="username_or_email">Username or Email</string>
+    <string name="forgot_password">Forgot Password?</string>
+    <string name="password_reset_email_sent">Password reset email sent!</string>
 </resources>

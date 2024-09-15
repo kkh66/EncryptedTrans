@@ -1,7 +1,6 @@
 package com.example.encryptedtrans
 
-import com.example.encryptedtrans.Viewmodels.LoginViewModel
-import com.example.encryptedtrans.Viewmodels.RegisterViewModel
+
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -9,9 +8,11 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.encryptedtrans.Page.Login
 import com.example.encryptedtrans.Page.MainPage
-import com.example.encryptedtrans.Page.Register
+import com.example.encryptedtrans.ui.LoginUi
+import com.example.encryptedtrans.ui.Register
+import com.example.encryptedtrans.viewmodel.LoginViewModel
+import com.example.encryptedtrans.viewmodel.RegisterViewModel
 
 enum class EncryptedTransScreen {
     Login,
@@ -38,7 +39,7 @@ fun NavControl(
         startDestination = check_login,
         builder = {
             composable(EncryptedTransScreen.Login.name) {
-                Login(navController,
+                LoginUi(navController,
                     viewModel = viewModel { LoginViewModel(Auth()) }
                 )
             }

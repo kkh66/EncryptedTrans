@@ -1,4 +1,4 @@
-package com.example.encryptedtrans.Viewmodels
+package com.example.encryptedtrans.viewmodel
 
 import androidx.lifecycle.ViewModel
 import com.example.encryptedtrans.Auth

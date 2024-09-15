@@ -13,15 +13,12 @@
         </DropdownSelection>
         <DialogSelection />
       </SelectionState>
-      <SelectionState runConfigName="QrPreview">
-        <option name="selectionMode" value="DROPDOWN" />
-      </SelectionState>
       <SelectionState runConfigName="MainActivity">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2024-09-08T12:27:56.434877100Z">
+        <DropdownSelection timestamp="2024-09-15T03:43:11.421019Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="PhysicalDevice" identifier="serial=AE6RUT4622000362" />
+              <DeviceId pluginId="PhysicalDevice" identifier="serial=29d5daa63b047ece" />
             </handle>
           </Target>
         </DropdownSelection>

@@ -1,4 +1,4 @@
-package com.example.encryptedtrans.Viewmodels
+package com.example.encryptedtrans.viewmodel
 
 import android.content.Context
 import android.net.Uri
@@ -12,7 +12,7 @@ import com.example.encryptedtrans.Auth
 import com.example.encryptedtrans.data.AnalysisResponse
 import com.example.encryptedtrans.data.FileRecord
 import com.example.encryptedtrans.data.VirusTotalAnalysisResult
-import com.example.encryptedtrans.data.VirusTotalFileUpload
+import com.example.encryptedtrans.data.VirusTotalFileUploadResult
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.QuerySnapshot
 import com.google.firebase.storage.FirebaseStorage
@@ -38,18 +38,8 @@ import java.io.InputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 
-
-interface VirusTotalApi {
-    @Multipart
-    @POST("files")
-    suspend fun uploadFile(@Part file: MultipartBody.Part): VirusTotalFileUpload
-
-    @GET("analyses/{id}")
-    suspend fun getAnalysisResult(@Path("id") id: String): AnalysisResponse
-}
-
 class FileViewModel : ViewModel() {
-    var scanResult by mutableStateOf<VirusTotalFileUpload?>(null)
+    var scanResult by mutableStateOf<VirusTotalFileUploadResult?>(null)
     var analysisResult by mutableStateOf<VirusTotalAnalysisResult?>(null)
     var isLoading by mutableStateOf(false)
     var errorMessage by mutableStateOf<String?>(null)
@@ -97,7 +87,8 @@ class FileViewModel : ViewModel() {
     private val retrofit = Retrofit.Builder()
         .baseUrl("https://www.virustotal.com/api/v3/")
         .addConverterFactory(GsonConverterFactory.create())
-        .client(OkHttpClient.Builder()
+        .client(
+            OkHttpClient.Builder()
             .addInterceptor { chain ->
                 val original = chain.request()
                 val request = original.newBuilder()
