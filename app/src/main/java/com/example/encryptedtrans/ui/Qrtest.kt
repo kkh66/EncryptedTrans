@@ -1,4 +1,4 @@
-package com.example.encryptedtrans.Page
+package com.example.encryptedtrans.ui
 
 import android.graphics.Bitmap
 import android.graphics.Color

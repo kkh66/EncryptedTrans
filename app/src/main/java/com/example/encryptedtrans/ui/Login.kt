@@ -13,7 +13,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -32,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -50,15 +53,16 @@ fun LoginUi(
     val context = LocalContext.current
     var showResetDialog by remember { mutableStateOf(false) }
 
+    // Password reset dialog
     if (showResetDialog) {
         AlertDialog(
             onDismissRequest = { showResetDialog = false },
-            title = { Text("Reset Password") },
+            title = { Text(stringResource(id = R.string.reset_password)) },
             text = {
                 OutlinedTextField(
                     value = viewModel.resetEmail,
                     onValueChange = { viewModel.updateResetEmail(it) },
-                    label = { Text("Email") }
+                    label = { Text(stringResource(id = R.string.email)) }
                 )
             },
             confirmButton = {
@@ -66,17 +70,37 @@ fun LoginUi(
                     viewModel.sendPasswordResetEmail()
                     showResetDialog = false
                 }) {
-                    Text("Send Reset Email")
+                    Text(stringResource(id = R.string.send_reset_email))
                 }
             },
             dismissButton = {
                 Button(onClick = { showResetDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(id = R.string.cancel))
                 }
             }
         )
     }
 
+    // Handle different login states in a single LaunchedEffect
+    LaunchedEffect(viewModel.loginState) {
+        when {
+            viewModel.loginState.isLoginSuccessful -> {
+                Toast.makeText(context, "Login successful!", Toast.LENGTH_SHORT).show()
+                navController.navigate(EncryptedTransScreen.Main.name)
+            }
+
+            viewModel.loginState.isPasswordResetSent -> {
+                Toast.makeText(context, "Password reset email sent!", Toast.LENGTH_SHORT).show()
+            }
+
+            viewModel.loginState.errorMessage != null -> {
+                Toast.makeText(context, viewModel.loginState.errorMessage, Toast.LENGTH_SHORT)
+                    .show()
+            }
+        }
+    }
+
+    // Google sign-in launcher
     val googleSignInLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -91,44 +115,15 @@ fun LoginUi(
         }
     }
 
-    // Handle error messages
-    LaunchedEffect(viewModel.loginState.errorMessage) {
-        viewModel.loginState.errorMessage?.let {
-            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    // Handle login success
-    LaunchedEffect(viewModel.loginState.isLoginSuccessful) {
-        if (viewModel.loginState.isLoginSuccessful) {
-            Toast.makeText(context, "Login successful!", Toast.LENGTH_SHORT).show()
-            navController.navigate(EncryptedTransScreen.Main.name)
-        }
-    }
-
-    LaunchedEffect(viewModel.loginState) {
-        when {
-            viewModel.loginState.isLoginSuccessful -> {
-                Toast.makeText(context, "Login successful!", Toast.LENGTH_SHORT).show()
-                navController.navigate(EncryptedTransScreen.Main.name)
-            }
-            viewModel.loginState.isPasswordResetSent -> {
-                Toast.makeText(context, "Password reset email sent!", Toast.LENGTH_SHORT).show()
-            }
-            viewModel.loginState.errorMessage != null -> {
-                Toast.makeText(context, viewModel.loginState.errorMessage, Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
+    val scrollState = rememberScrollState()
 
     Box(
         modifier = Modifier
             .padding(16.dp)
             .fillMaxHeight()
-            .fillMaxWidth(),
+            .verticalScroll(scrollState),
     ) {
         Column {
-            // Company logo
             Image(
                 painter = painterResource(id = R.drawable.logo_use),
                 contentDescription = "Company Logo",
@@ -139,14 +134,13 @@ fun LoginUi(
                     .align(Alignment.CenterHorizontally)
             )
 
-            // Email and password fields
             Column(modifier = Modifier.fillMaxWidth()) {
                 OutlinedTextField(
                     modifier = Modifier.fillMaxWidth(),
                     value = viewModel.email,
                     shape = RoundedCornerShape(25),
                     onValueChange = { viewModel.updateEmail(it) },
-                    label = { Text(text = "Email") }
+                    label = { Text(stringResource(id = R.string.email)) }
                 )
 
                 Spacer(modifier = Modifier.height(5.dp))
@@ -156,16 +150,17 @@ fun LoginUi(
                     value = viewModel.password,
                     shape = RoundedCornerShape(25),
                     visualTransformation = PasswordVisualTransformation(),
-                    onValueChange = { viewModel.updatePassword(it) }, // Corrected to call ViewModel function
-                    label = { Text(text = "Password") }
+                    onValueChange = { viewModel.updatePassword(it) },
+                    label = { Text(stringResource(id = R.string.password)) }
                 )
+
                 TextButton(
                     onClick = { showResetDialog = true },
                     modifier = Modifier
                         .height(50.dp)
                         .align(Alignment.End)
                 ) {
-                    Text("Forgot Password?")
+                    Text(stringResource(id = R.string.forgot_password))
                 }
 
                 Spacer(modifier = Modifier.height(5.dp))
@@ -188,7 +183,7 @@ fun LoginUi(
                                 .fillMaxWidth()
                                 .height(50.dp)
                         ) {
-                            Text("Login")
+                            Text(stringResource(id = R.string.login))
                         }
                     }
                 }
@@ -205,7 +200,6 @@ fun LoginUi(
             ) {
                 Text("No Account? Sign Up")
             }
-
 
             HorizontalDivider(color = Color.White, thickness = 2.dp)
 
@@ -250,7 +244,5 @@ fun LoginUi(
                 Text("Continue with Facebook", modifier = Modifier.padding(start = 10.dp))
             }
         }
-
     }
-
 }

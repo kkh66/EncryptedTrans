@@ -51,7 +51,6 @@ class LoginViewModel(private val auth: Auth) : ViewModel() {
                         loginState.copy(errorMessage = result.message)
 
                     }
-
                     else -> {
                         loginState.copy(errorMessage = "Unexpected response during login.")
                     }
@@ -69,7 +68,6 @@ class LoginViewModel(private val auth: Auth) : ViewModel() {
     fun signInWithGoogle(idToken: String) {
         viewModelScope.launch {
             loginState = loginState.copy(isLoading = true, errorMessage = null)
-
             try {
                 val result = auth.signInWithGoogle(idToken)
                 loginState = when (result) {

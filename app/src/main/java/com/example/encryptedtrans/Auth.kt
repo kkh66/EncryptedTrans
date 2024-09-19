@@ -1,6 +1,9 @@
 package com.example.encryptedtrans
 
+import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.userProfileChangeRequest
@@ -25,6 +28,13 @@ class Auth {
                 firebaseUser.updateProfile(userProfileChangeRequest {
                     displayName = username
                 }).await()
+
+                val userDoc = hashMapOf(
+                    "username" to username,
+                    "email" to email
+                )
+                db.collection("users").document(firebaseUser.uid).set(userDoc).await()
+
                 AuthResult.Success(firebaseUser)
             } ?: AuthResult.Error("Registration failed: User is null")
         } catch (e: Exception) {
@@ -88,16 +98,56 @@ class Auth {
         }
     }
 
+    suspend fun updateUserProfile(username: String): AuthResult {
+        return try {
+            val user = auth.currentUser ?: throw Exception("User is not logged in")
+
+            val profileUpdates = userProfileChangeRequest {
+                displayName = username
+            }
+            user.updateProfile(profileUpdates).await()
+
+            val userDocRef = db.collection("users").document(user.uid)
+            userDocRef.update("username", username).await()
+
+            AuthResult.Success(user)
+        } catch (e: Exception) {
+            AuthResult.Error(e.message ?: "An unknown error occurred while updating profile")
+        }
+    }
+
+    suspend fun updateUserEmail(newEmail: String, email: String, password: String): AuthResult {
+        return try {
+            val user = auth.currentUser ?: throw Exception("User is not logged in")
+
+
+            val credential = EmailAuthProvider.getCredential(email, password)
+            user.reauthenticate(credential).await()
+
+            user.verifyBeforeUpdateEmail(newEmail)
+
+
+            AuthResult.Success(user)
+        } catch (e: Exception) {
+            // Handle specific reauthentication errors
+            if (e is FirebaseAuthInvalidCredentialsException) {
+                return AuthResult.Error("Please check your email and password")
+            } else if (e is FirebaseAuthUserCollisionException) {
+                return AuthResult.Error("This email is already in use by another account")
+            }
+            return AuthResult.Error("An unknown error occurred: ${e.message}")
+        }
+    }
+
+
+
+
     fun logoutUser() {
         auth.signOut()
     }
 
     fun getCurrentUser(): FirebaseUser? {
         return auth.currentUser
-    }
-
-    fun getUsername(): String {
-        return getCurrentUser()?.displayName ?: "Unknown User"
     }
 
     fun isUserLoggedIn(): Boolean {

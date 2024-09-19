@@ -2,9 +2,11 @@
     <string name="app_name">EncryptedTrans</string>
     <string name="username">Username</string>
     <string name="email">Email</string>
+    <string name="email_user">Email:</string>
     <string name="password">Password</string>
     <string name="confirm_password">Confirm Password</string>
     <string name="login">Login</string>
+    <string name="update">Update</string>
     <string name="sign_up">No Account? Sign Up</string>
     <string name="continue_with_google">Continue with Google</string>
     <string name="continue_with_facebook">Continue with Facebook</string>

@@ -46,6 +46,7 @@ class RegisterViewModel(private val auth: Auth) : ViewModel() {
         viewModelScope.launch {
             registerState = registerState.copy(isLoading = true, errorMessage = null)
 
+            //check the input validate or not
             if (!validateInputs()) {
                 registerState = registerState.copy(isLoading = false)
                 return@launch
@@ -66,6 +67,7 @@ class RegisterViewModel(private val auth: Auth) : ViewModel() {
                 }
             } catch (e: Exception) {
                 registerState = registerState.copy(errorMessage = "Registration failed: ${e.message}")
+                clearInputs()
             } finally {
                 registerState = registerState.copy(isLoading = false)
             }

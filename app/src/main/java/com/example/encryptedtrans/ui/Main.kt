@@ -1,6 +1,6 @@
-package com.example.encryptedtrans.Page
+package com.example.encryptedtrans.ui
 
-import android.app.Application
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -29,29 +29,34 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.encryptedtrans.Auth
 import com.example.encryptedtrans.EncryptedTransScreen
+import com.example.encryptedtrans.Page.Folder
 import com.example.encryptedtrans.viewmodel.FileViewModel
-import com.example.encryptedtrans.viewmodel.UserProfileViewmodel
+import com.example.encryptedtrans.viewmodel.UserProfileViewModel
 import io.github.vinceglb.filekit.core.FileKitPlatformSettings
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainPage(
+fun MainUi(
     modifier: Modifier,
     navController: NavController,
-    platformSettings: FileKitPlatformSettings? = null
-) {
-    val mainNavController = rememberNavController()
-    Scaffold(
+    platformSettings: FileKitPlatformSettings? = null,
 
+    ) {
+    val mainNavController = rememberNavController()
+    val userProfileViewModel: UserProfileViewModel = viewModel { UserProfileViewModel(Auth()) }
+    val context = LocalContext.current
+    val fileViewModel: FileViewModel = viewModel { FileViewModel(Auth(), context) }
+    Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
@@ -74,9 +79,14 @@ fun MainPage(
                     HorizontalDivider(
                         color = Color.Gray, thickness = 1.dp
                     )
-                    Row {
+                    Row(
+                        modifier
+                            .fillMaxWidth()
+                            .padding(start = 16.dp, end = 16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Column(
-                            modifier.width(130.dp),
                             verticalArrangement = Arrangement.Center,
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
@@ -98,11 +108,9 @@ fun MainPage(
                             Text("Folder")
                         }
                         Column(
-                            modifier.size(130.dp),
                             verticalArrangement = Arrangement.Center,
                             horizontalAlignment = Alignment.CenterHorizontally,
-
-                            ) {
+                        ) {
                             Button(
                                 onClick = { mainNavController.navigate(EncryptedTransScreen.Home.name) },
                                 modifier
@@ -121,7 +129,6 @@ fun MainPage(
                             Text("Home")
                         }
                         Column(
-                            modifier.width(130.dp),
                             verticalArrangement = Arrangement.Center,
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
@@ -157,16 +164,20 @@ fun MainPage(
                 .padding(paddingValues)
         ) {
             composable(EncryptedTransScreen.Folder.name) {
-                Folder(viewmodel = FileViewModel(), platformSettings)
+                FileUi(viewModel = fileViewModel, platformSettings = platformSettings)
             }
             composable(EncryptedTransScreen.Home.name) {
-                FileShareApp()
+                HomeUi()
             }
             composable(EncryptedTransScreen.Account.name) {
-                UserProfile(
-                    viewmodel = UserProfileViewmodel(Auth()),
-                    navController = navController
+                UserUi(
+                    viewModel = userProfileViewModel,
+                    navController = navController,
+                    mainNavController = mainNavController
                 )
+            }
+            composable(EncryptedTransScreen.EditUser.name) {
+                EditUserUi(viewModel = userProfileViewModel, navController = mainNavController)
             }
         }
     }

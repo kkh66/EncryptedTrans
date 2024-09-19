@@ -8,8 +8,8 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.encryptedtrans.Page.MainPage
 import com.example.encryptedtrans.ui.LoginUi
+import com.example.encryptedtrans.ui.MainUi
 import com.example.encryptedtrans.ui.Register
 import com.example.encryptedtrans.viewmodel.LoginViewModel
 import com.example.encryptedtrans.viewmodel.RegisterViewModel
@@ -20,14 +20,15 @@ enum class EncryptedTransScreen {
     Register,
     Folder,
     Home,
-    Account
+    Account,
+    EditUser
 }
 
 @Composable
 fun NavControl(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
-    auth: Auth
+    auth: Auth = Auth()
 ) {
     val check_login = if (auth.isUserLoggedIn()) {
         EncryptedTransScreen.Main.name
@@ -40,15 +41,15 @@ fun NavControl(
         builder = {
             composable(EncryptedTransScreen.Login.name) {
                 LoginUi(navController,
-                    viewModel = viewModel { LoginViewModel(Auth()) }
+                    viewModel = viewModel { LoginViewModel(auth) }
                 )
             }
             composable(EncryptedTransScreen.Main.name) {
-                MainPage(modifier, navController)
+                MainUi(modifier, navController)
             }
             composable(EncryptedTransScreen.Register.name) {
                 Register(
-                    viewModel = viewModel { RegisterViewModel(Auth()) },
+                    viewModel = viewModel { RegisterViewModel(auth) },
                     navController
                 )
             }

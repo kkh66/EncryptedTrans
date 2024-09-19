@@ -9,6 +9,7 @@ import retrofit2.http.POST
 import retrofit2.http.Part
 import retrofit2.http.Path
 
+//retrofit need to communicate with api
 interface VirusTotalApi {
     @Multipart
     @POST("files")

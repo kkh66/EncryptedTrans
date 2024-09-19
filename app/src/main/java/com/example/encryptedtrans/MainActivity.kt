@@ -10,18 +10,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.rememberNavController
 import com.example.encryptedtrans.ui.theme.EncryptedTransTheme
+import com.google.firebase.FirebaseApp
 import io.github.vinceglb.filekit.core.FileKit
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         FileKit.init(this)
+        FirebaseApp.initializeApp(this)
         enableEdgeToEdge()
         setContent {
-            EncryptedTransTheme() {
+            EncryptedTransTheme {
                 Surface(modifier = Modifier.padding(top = 0.dp)) {
                     NavControl(
-                        navController = rememberNavController(), auth = Auth()
+                        navController = rememberNavController(),
+                        auth = Auth()
                     )
                 }
             }

@@ -31,7 +31,7 @@ fun HomeUi() {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                "Folder", modifier = Modifier.padding(3.dp), color = Color.White
+                "Home", modifier = Modifier.padding(3.dp), color = Color.White
             )
             HorizontalDivider(
                 modifier = Modifier
@@ -48,11 +48,4 @@ fun HomeUi() {
 
 
 
-@Preview
-@Composable
-fun homepreview(){
-    EncryptedTransTheme {
-        HomeUi()
-    }
-}
 
