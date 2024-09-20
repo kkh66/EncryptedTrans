@@ -21,7 +21,8 @@ enum class EncryptedTransScreen {
     Folder,
     Home,
     Account,
-    EditUser
+    EditUser,
+    Result
 }
 
 @Composable

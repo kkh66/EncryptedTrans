@@ -8,7 +8,9 @@ import androidx.lifecycle.viewModelScope
 import com.example.encryptedtrans.Auth
 import com.example.encryptedtrans.data.UserProfileState
 import com.example.encryptedtrans.utils.Utils
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 
 class UserProfileViewModel(private val auth: Auth) : ViewModel() {
@@ -23,6 +25,7 @@ class UserProfileViewModel(private val auth: Auth) : ViewModel() {
 
     var profileState by mutableStateOf(UserProfileState())
         private set
+
 
     private val utils = Utils()
 
@@ -58,13 +61,15 @@ class UserProfileViewModel(private val auth: Auth) : ViewModel() {
 
             try {
                 if (!utils.validateUsername(username)) {
-                    profileState = profileState.copy(errorMessage = "Invalid Username", isLoading = false)
+                    profileState =
+                        profileState.copy(errorMessage = "Invalid Username", isLoading = false)
                     return@launch
                 }
 
                 val usernameResult = auth.updateUserProfile(username)
                 if (usernameResult is Auth.AuthResult.Error) {
-                    profileState = profileState.copy(errorMessage = usernameResult.message, isLoading = false)
+                    profileState =
+                        profileState.copy(errorMessage = usernameResult.message, isLoading = false)
                     return@launch
                 }
 
@@ -85,7 +90,8 @@ class UserProfileViewModel(private val auth: Auth) : ViewModel() {
             }
 
             if (password.isEmpty()) {
-                profileState = profileState.copy(errorMessage = "Password is required for email change")
+                profileState =
+                    profileState.copy(errorMessage = "Password is required for email change")
                 return@launch
             }
 
@@ -93,32 +99,38 @@ class UserProfileViewModel(private val auth: Auth) : ViewModel() {
 
             try {
                 val result = auth.updateUserEmail(newEmail, email, password)
-                profileState = when (result) {
+                when (result) {
                     is Auth.AuthResult.Success -> {
-                        profileState.copy(isEmailChangeSent = true)
+                        profileState = profileState.copy(isEmailChangeSent = true)
                     }
+
                     is Auth.AuthResult.Error -> {
-                        profileState.copy(errorMessage = result.message)
+                        profileState = profileState.copy(errorMessage = result.message)
                     }
+
                     else -> {
-                        profileState.copy(errorMessage = "Unexpected response. Please try again.")
+                        profileState =
+                            profileState.copy(errorMessage = "Unexpected response. Please try again.")
                     }
                 }
             } catch (e: Exception) {
-                profileState = profileState.copy(errorMessage = "Failed to send email change request: ${e.message}")
+                profileState =
+                    profileState.copy(errorMessage = "Failed to send email change request: ${e.message}")
             } finally {
                 profileState = profileState.copy(isLoading = false)
-                newEmail = "" // Clear the new email after attempt
-                password = "" // Clear the password after attempt
+                newEmail = ""
+                password = ""
             }
         }
     }
+
 
     fun logout() {
         auth.logoutUser()
         clearInputs()
         profileState = UserProfileState()
     }
+
 
     private fun clearInputs() {
         username = ""

@@ -1,12 +1,15 @@
 package com.example.encryptedtrans.ui
 
 import android.content.Context
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -30,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -39,7 +43,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.encryptedtrans.Auth
 import com.example.encryptedtrans.EncryptedTransScreen
-import com.example.encryptedtrans.Page.Folder
+import com.example.encryptedtrans.R
 import com.example.encryptedtrans.viewmodel.FileViewModel
 import com.example.encryptedtrans.viewmodel.UserProfileViewModel
 import io.github.vinceglb.filekit.core.FileKitPlatformSettings
@@ -60,13 +64,21 @@ fun MainUi(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    Text("Protect,Encrypt,Deliver", fontSize = 20.sp)
+                    Image(
+                        painter = painterResource(R.drawable.sfts_mobile_removebg_preview),
+                        contentDescription = "",
+                        modifier
+                            .size(150.dp)
+                            .height(50.dp)
+                            .padding(0.dp),
+                    )
                 },
                 modifier
                     .fillMaxWidth()
                     .padding(0.dp)
                     .background(color = Color.Transparent)
                     .statusBarsPadding(),
+                windowInsets = WindowInsets(top = 0.dp, bottom = 0.dp),
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.Transparent)
             )
         },
@@ -177,7 +189,7 @@ fun MainUi(
                 )
             }
             composable(EncryptedTransScreen.EditUser.name) {
-                EditUserUi(viewModel = userProfileViewModel, navController = mainNavController)
+                EditUserUi(viewModel = userProfileViewModel, navController = mainNavController, mainHostController = navController)
             }
         }
     }

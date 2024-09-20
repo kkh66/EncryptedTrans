@@ -20,7 +20,12 @@ import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -46,9 +51,28 @@ class FileViewModel(private val auth: Auth, private val context: Context) : View
     private val _fileState = MutableStateFlow(FileState())
     val fileState: StateFlow<FileState> = _fileState
 
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    fun updateSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
+
+    val filteredFilesList: StateFlow<List<FileRecord>> = _searchQuery
+        .combine(_fileState.map { it.filesList }) { query, filesList ->
+            if (query.isEmpty()) {
+                emptyList<FileRecord>()
+            } else {
+                filesList.filter { it.filename.contains(query, ignoreCase = true) }
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+
     // Initialize Firebase Firestore and Storage references
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
     private val storage = FirebaseStorage.getInstance().reference
+
 
     // Initialize Retrofit for VirusTotal API
     private val retrofit: Retrofit = Retrofit.Builder()
@@ -73,6 +97,7 @@ class FileViewModel(private val auth: Auth, private val context: Context) : View
     // Fetch existing files for the authenticated user
     init {
         fetchFiles(auth.getCurrentUser()?.uid)
+
     }
 
     /**

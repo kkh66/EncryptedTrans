@@ -10,5 +10,6 @@ data class FileState(
     val progressMessage: String? = null,
     val completionMessage: String? = null,
     val filesList: List<FileRecord> = emptyList(),
-    val noFilesMessage: String? = null
+    val noFilesMessage: String? = null,
+    var isSearchActive: Boolean = false
 )

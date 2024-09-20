@@ -40,6 +40,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.encryptedtrans.EncryptedTransScreen
+import com.example.encryptedtrans.R
 import com.example.encryptedtrans.viewmodel.UserProfileViewModel
 
 @Composable
@@ -47,6 +49,7 @@ fun EditUserUi(
     modifier: Modifier = Modifier,
     viewModel: UserProfileViewModel,
     navController: NavController,
+    mainHostController: NavController
 ) {
     val context = LocalContext.current
     var changeEmail by remember { mutableStateOf(false) }
@@ -67,8 +70,18 @@ fun EditUserUi(
 
     LaunchedEffect(viewModel.profileState.isEmailChangeSent) {
         if (viewModel.profileState.isEmailChangeSent) {
-            Toast.makeText(context, "Please check your email to confirm the change", Toast.LENGTH_LONG).show()
-            viewModel.resetUpdateSuccessState()
+            Toast.makeText(
+                context,
+                "A email have sent to you please check.Please Login Again",
+                Toast.LENGTH_SHORT
+            ).show()
+            viewModel.logout()
+            mainHostController.navigate(EncryptedTransScreen.Login.name) {
+                popUpTo(navController.graph.startDestinationId) {
+                    inclusive = true
+                }
+                launchSingleTop = true
+            }
         }
     }
 
@@ -103,7 +116,7 @@ fun EditUserUi(
                 OutlinedTextField(
                     value = viewModel.username,
                     onValueChange = { viewModel.updateUsername(it) },
-                    label = { Text("Username") },
+                    label = { Text(stringResource(R.string.username)) },
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(16.dp))

@@ -6,6 +6,11 @@
     <string name="password">Password</string>
     <string name="confirm_password">Confirm Password</string>
     <string name="login">Login</string>
+    <string name="folder">Folder</string>
+    <string name="search_empty">No files match your search</string>
+    <string name="search_icon">Search</string>
+    <string name="search_result">Result</string>
+    <string name="search_field">Search files</string>
     <string name="update">Update</string>
     <string name="sign_up">No Account? Sign Up</string>
     <string name="continue_with_google">Continue with Google</string>
