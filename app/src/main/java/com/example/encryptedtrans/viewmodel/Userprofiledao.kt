@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import com.example.encryptedtrans.data.UserProfileImage
 
 @Dao
@@ -12,5 +13,14 @@ interface UserProfileDao {
     suspend fun getUserProfile(userId: String): UserProfileImage?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertProfilePicture(userProfilePicture: UserProfileImage)
+    suspend fun insertProfilePicture(userProfileImage: UserProfileImage)
+
+    @Update
+    suspend fun updateProfilePicture(userProfileImage: UserProfileImage)
+
+    @Query("DELETE FROM user_profile_image WHERE userId = :userId")
+    suspend fun deleteProfilePicture(userId: String)
+
+    @Query("SELECT profileImagePath FROM user_profile_image WHERE userId = :userId")
+    suspend fun getProfileImagePath(userId: String): String?
 }

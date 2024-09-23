@@ -11,5 +11,6 @@ data class FileState(
     val completionMessage: String? = null,
     val filesList: List<FileRecord> = emptyList(),
     val noFilesMessage: String? = null,
-    var isSearchActive: Boolean = false
+    var isSearchActive: Boolean = false,
+    val sharedFiles: List<SharedFileWithDetails> = emptyList(),
 )

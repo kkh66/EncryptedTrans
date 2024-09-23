@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Environment
 import android.provider.OpenableColumns
+import android.util.Log
 import android.webkit.MimeTypeMap
 import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
@@ -14,7 +15,12 @@ import com.example.encryptedtrans.BuildConfig
 import com.example.encryptedtrans.data.FileData
 import com.example.encryptedtrans.data.FileRecord
 import com.example.encryptedtrans.data.FileState
+import com.example.encryptedtrans.data.SharedFile
+import com.example.encryptedtrans.data.SharedFileWithDetails
+import com.example.encryptedtrans.data.User
 import com.example.encryptedtrans.data.VirusTotalAnalysisResult
+import com.google.firebase.Timestamp
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.Dispatchers
@@ -28,7 +34,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -47,6 +52,7 @@ import java.util.Locale
 class FileViewModel(private val auth: Auth, private val context: Context) : ViewModel() {
 
     private val notification = notification(context)
+
     // UI State managed using MutableStateFlow
     private val _fileState = MutableStateFlow(FileState())
     val fileState: StateFlow<FileState> = _fileState
@@ -54,9 +60,155 @@ class FileViewModel(private val auth: Auth, private val context: Context) : View
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
+    private val _usersList = MutableStateFlow<List<User>>(emptyList())
+    val usersList: StateFlow<List<User>> = _usersList.asStateFlow()
+
+    // StateFlow for shared files
+    private val _sharedFiles = MutableStateFlow<List<SharedFileWithDetails>>(emptyList())
+    val sharedFiles: StateFlow<List<SharedFileWithDetails>> = _sharedFiles.asStateFlow()
+
     fun updateSearchQuery(query: String) {
         _searchQuery.value = query
     }
+
+    fun fetchUsers() {
+        viewModelScope.launch {
+            try {
+                Log.d("FileViewModel", "fetchUsers() called")
+                val result = firestore.collection("users").get().await()
+                val users = result.documents.mapNotNull { doc ->
+                    val id = doc.id
+                    val name = doc.getString("username")
+                    val email = doc.getString("email")
+                    Log.d("FileViewModel", "User Document: id=$id, name=$name, email=$email")
+                    if (name != null && email != null) {
+                        User(id = id, name = name, email = email)
+                    } else null
+                }
+                _usersList.value = users
+                Log.d("FileViewModel", "Fetched users: $users")
+            } catch (e: Exception) {
+                Log.e("FileViewModel", "Failed to fetch users: ${e.localizedMessage}", e)
+                _fileState.value = _fileState.value.copy(
+                    errorMessage = "Failed to fetch users: ${e.localizedMessage}"
+                )
+            }
+        }
+    }
+
+
+    fun shareFile(
+        fileRecord: FileRecord?,
+        userIds: List<String>,
+        pin: String?,
+        expirationDate: Date?
+    ) {
+        if (fileRecord == null) return
+        viewModelScope.launch {
+            try {
+                val shareData = hashMapOf(
+                    "fileId" to fileRecord.id,
+                    "sharedBy" to auth.getCurrentUser()?.uid,
+                    "sharedWith" to userIds,
+                    "pin" to pin,
+                    "expirationDate" to expirationDate?.let { Timestamp(it) },
+                    "timestamp" to FieldValue.serverTimestamp()
+                )
+                firestore.collection("shared_files")
+                    .add(shareData)
+                    .await()
+                // Optionally, update a state or show a success message
+            } catch (e: Exception) {
+                // Handle the error, e.g., update an error state
+                _fileState.value = _fileState.value.copy(
+                    errorMessage = "Failed to share file: ${e.localizedMessage}"
+                )
+            }
+        }
+    }
+
+
+    fun fetchSharedFiles() {
+        val userId = auth.getCurrentUser()?.uid ?: return
+        viewModelScope.launch {
+            try {
+                val result = firestore.collection("shared_files")
+                    .whereArrayContains("sharedWith", userId)
+                    .get()
+                    .await()
+                val sharedFiles = result.documents.mapNotNull { doc ->
+                    val fileId = doc.getString("fileId")
+                    val sharedBy = doc.getString("sharedBy")
+                    val pin = doc.getString("pin")
+                    val expirationDate = doc.getTimestamp("expirationDate")?.toDate()
+                    if (fileId != null && sharedBy != null) {
+                        SharedFile(
+                            id = doc.id,
+                            fileId = fileId,
+                            sharedBy = sharedBy,
+                            pin = pin,
+                            expirationDate = expirationDate
+                        )
+                    } else null
+                }
+
+                val files = sharedFiles.mapNotNull { sharedFile ->
+                    val fileDoc = firestore.collection("files")
+                        .document(sharedFile.sharedBy)
+                        .collection("userFiles")
+                        .document(sharedFile.fileId)
+                        .get()
+                        .await()
+                    val fileRecord = fileDoc.toObject(FileRecord::class.java)?.copy(id = fileDoc.id)
+                    if (fileRecord != null) {
+                        SharedFileWithDetails(
+                            sharedFile = sharedFile,
+                            fileRecord = fileRecord
+                        )
+                    } else null
+                }
+                _sharedFiles.value = files
+            } catch (e: Exception) {
+                // Handle the error, e.g., update an error state
+                _fileState.value = _fileState.value.copy(
+                    errorMessage = "Failed to fetch shared files: ${e.localizedMessage}"
+                )
+            }
+        }
+    }
+
+    fun setErrorMessage(message: String) {
+        _fileState.value = _fileState.value.copy(errorMessage = message)
+    }
+
+    fun accessSharedFile(
+        context: Context,
+        sharedFileWithDetails: SharedFileWithDetails,
+        enteredPin: String? = null
+    ) {
+        val sharedFile = sharedFileWithDetails.sharedFile
+        val currentTime = Date()
+
+        if (sharedFile.expirationDate != null && currentTime.after(sharedFile.expirationDate)) {
+            setErrorMessage("This file has expired.")
+            return
+        }
+
+        if (sharedFile.pin != null) {
+            if (enteredPin == sharedFile.pin) {
+                // Proceed to download or open the file
+                downloadFile(context, sharedFileWithDetails.fileRecord!!)
+            } else {
+                setErrorMessage("Incorrect PIN.")
+            }
+        } else {
+            // No PIN protection, proceed to download or open the file
+            downloadFile(context, sharedFileWithDetails.fileRecord!!)
+        }
+    }
+
+
+
 
     val filteredFilesList: StateFlow<List<FileRecord>> = _searchQuery
         .combine(_fileState.map { it.filesList }) { query, filesList ->
@@ -382,16 +534,19 @@ class FileViewModel(private val auth: Auth, private val context: Context) : View
      */
     fun downloadFile(context: Context, fileRecord: FileRecord) {
         viewModelScope.launch {
-            _fileState.update { it.copy(
-                isDownloading = true,
-                downloadProgress = 0,
-                errorMessage = null,
-                completionMessage = null
-            ) }
+            _fileState.update {
+                it.copy(
+                    isDownloading = true,
+                    downloadProgress = 0,
+                    errorMessage = null,
+                    completionMessage = null
+                )
+            }
             notification.showDownloadNotification("Downloading", "Starting download...", 0)
 
             try {
-                val downloadUrl = fileRecord.downloadUrl ?: throw Exception("Download URL is missing.")
+                val downloadUrl =
+                    fileRecord.downloadUrl ?: throw Exception("Download URL is missing.")
                 val storageRef = storage.storage.getReferenceFromUrl(downloadUrl)
                 val sanitizedFileName = sanitizeFileName(fileRecord.filename)
                 val downloadsDir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
@@ -399,9 +554,14 @@ class FileViewModel(private val auth: Auth, private val context: Context) : View
 
                 storageRef.getFile(localFile)
                     .addOnProgressListener { taskSnapshot ->
-                        val progress = (100.0 * taskSnapshot.bytesTransferred / taskSnapshot.totalByteCount).toInt()
+                        val progress =
+                            (100.0 * taskSnapshot.bytesTransferred / taskSnapshot.totalByteCount).toInt()
                         _fileState.update { it.copy(downloadProgress = progress) }
-                        notification.showDownloadNotification("Downloading", "${fileRecord.filename} - $progress%", progress)
+                        notification.showDownloadNotification(
+                            "Downloading",
+                            "${fileRecord.filename} - $progress%",
+                            progress
+                        )
                     }
                     .addOnSuccessListener {
                         viewModelScope.launch {
@@ -414,34 +574,55 @@ class FileViewModel(private val auth: Auth, private val context: Context) : View
                                 withContext(Dispatchers.IO) {
                                     fileDao.insertFile(fileData)
                                 }
-                                _fileState.update { it.copy(
-                                    completionMessage = "File downloaded successfully.",
-                                    isDownloading = false
-                                ) }
-                                notification.showDownloadNotification("Download Complete", "${fileRecord.filename} downloaded successfully", 100)
+                                _fileState.update {
+                                    it.copy(
+                                        completionMessage = "File downloaded successfully.",
+                                        isDownloading = false
+                                    )
+                                }
+                                notification.showDownloadNotification(
+                                    "Download Complete",
+                                    "${fileRecord.filename} downloaded successfully",
+                                    100
+                                )
                             } catch (e: Exception) {
-                                _fileState.update { it.copy(
-                                    errorMessage = "Failed to insert file data: ${e.message}",
-                                    isDownloading = false
-                                ) }
-                                notification.showDownloadNotification("Download Failed", "Failed to save file data: ${e.message}")
+                                _fileState.update {
+                                    it.copy(
+                                        errorMessage = "Failed to insert file data: ${e.message}",
+                                        isDownloading = false
+                                    )
+                                }
+                                notification.showDownloadNotification(
+                                    "Download Failed",
+                                    "Failed to save file data: ${e.message}"
+                                )
                             }
                         }
                     }
                     .addOnFailureListener { exception ->
-                        _fileState.update { it.copy(
-                            errorMessage = "Failed to download file: ${exception.localizedMessage}",
-                            isDownloading = false
-                        ) }
-                        notification.showDownloadNotification("Download Failed", "Failed to download file: ${exception.localizedMessage}")
+                        _fileState.update {
+                            it.copy(
+                                errorMessage = "Failed to download file: ${exception.localizedMessage}",
+                                isDownloading = false
+                            )
+                        }
+                        notification.showDownloadNotification(
+                            "Download Failed",
+                            "Failed to download file: ${exception.localizedMessage}"
+                        )
                     }
                     .await()
             } catch (e: Exception) {
-                _fileState.update { it.copy(
-                    errorMessage = "Failed to download file: ${e.localizedMessage}",
-                    isDownloading = false
-                ) }
-                notification.showDownloadNotification("Download Failed", "Failed to download file: ${e.localizedMessage}")
+                _fileState.update {
+                    it.copy(
+                        errorMessage = "Failed to download file: ${e.localizedMessage}",
+                        isDownloading = false
+                    )
+                }
+                notification.showDownloadNotification(
+                    "Download Failed",
+                    "Failed to download file: ${e.localizedMessage}"
+                )
             }
         }
     }
@@ -574,49 +755,49 @@ class FileViewModel(private val auth: Auth, private val context: Context) : View
             notification.showScanNotification("Deleting File", "Starting file deletion...", 0)
 
             try {
-                val userId = auth.getCurrentUser()?.uid ?: throw SecurityException("User not authenticated.")
+                val userId =
+                    auth.getCurrentUser()?.uid ?: throw SecurityException("User not authenticated.")
 
-                // Delete the file from Firebase Storage
-                fileRecord.downloadUrl?.let { url ->
-                    val storageRef = storage.storage.getReferenceFromUrl(url)
-                    storageRef.delete().await()
-                } ?: throw IllegalStateException("Download URL is missing.")
+                // 1. Attempt to delete the file from Firebase Storage if URL is available
+                if (fileRecord.downloadUrl != null) {
+                    try {
+                        val storageRef = storage.storage.getReferenceFromUrl(fileRecord.downloadUrl)
+                        storageRef.delete().await()
+                    } catch (e: Exception) {
+                        // We'll continue with Firestore document deletion even if Storage deletion fails
 
-                // Delete Firestore document and local file
-                firestore.runTransaction { transaction ->
-                    // Delete the Firestore document
-                    val documentRef = firestore.collection("files")
-                        .document(userId)
-                        .collection("userFiles")
-                        .document(fileRecord.id)
-                    transaction.delete(documentRef)
-
-                    // Delete local file if it exists
-                    // Note: Using runBlocking here is not ideal for performance, but it allows us to perform
-                    // suspending operations within the transaction. Consider alternative approaches for better performance.
-                    runBlocking {
-                        val fileDao = AppDatabase.getDatabase(context).fileDao()
-                        val localFileData = fileDao.getFileByFilename(fileRecord.filename)
-                        localFileData?.let {
-                            val localFile = File(it.filePath)
-                            if (localFile.exists()) {
-                                localFile.delete()
-                            }
-                            fileDao.deleteFile(it)
-                        }
                     }
-                }.await()
-
-                // Remove the file from the local list
-                val updatedList = _fileState.value.filesList.toMutableList().apply {
-                    remove(fileRecord)
                 }
 
-                _fileState.update { it.copy(
-                    filesList = updatedList,
-                    completionMessage = "File deleted successfully.",
-                    isLoading = false
-                ) }
+                // 2. Delete the Firestore document
+                val documentRef = firestore.collection("files")
+                    .document(userId)
+                    .collection("userFiles")
+                    .document(fileRecord.id)
+                documentRef.delete().await()
+
+                // 3. Delete local file and database entry
+                val fileDao = AppDatabase.getDatabase(context).fileDao()
+                val localFileData = fileDao.getFileByFilename(fileRecord.filename)
+                localFileData?.let {
+                    val localFile = File(it.filePath)
+                    if (localFile.exists()) {
+                        localFile.delete()
+                    }
+                    fileDao.deleteFile(it)
+                }
+
+                // 4. Update the UI state
+                _fileState.update { currentState ->
+                    val updatedList = currentState.filesList.toMutableList().apply {
+                        remove(fileRecord)
+                    }
+                    currentState.copy(
+                        filesList = updatedList,
+                        completionMessage = "File deleted successfully.",
+                        isLoading = false
+                    )
+                }
                 notification.showScanNotification("File Deleted", "File deleted successfully.", 100)
 
             } catch (e: Exception) {
@@ -625,14 +806,93 @@ class FileViewModel(private val auth: Auth, private val context: Context) : View
                     is IllegalStateException -> "File information is incomplete."
                     else -> "Failed to delete file: ${e.localizedMessage}"
                 }
-                _fileState.update { it.copy(
-                    errorMessage = errorMessage,
-                    isLoading = false
-                ) }
+                _fileState.update {
+                    it.copy(
+                        errorMessage = errorMessage,
+                        isLoading = false
+                    )
+                }
                 notification.showScanNotification("Deletion Failed", errorMessage)
             }
         }
     }
+
+    fun updateFileName(fileRecord: FileRecord, newFileName: String) {
+        viewModelScope.launch {
+            _fileState.update { it.copy(isLoading = true, errorMessage = null) }
+            notification.showScanNotification("Updating File", "Starting file update...", 0)
+
+            try {
+                val userId =
+                    auth.getCurrentUser()?.uid ?: throw SecurityException("User not authenticated.")
+
+                // Update Firebase Storage reference
+                fileRecord.downloadUrl?.let { url ->
+                    val oldStorageRef = storage.storage.getReferenceFromUrl(url)
+                    val newStorageRef = storage.child("files/$userId/$newFileName")
+
+                    // Copy the file to the new location
+                    oldStorageRef.getBytes(Long.MAX_VALUE).await().let { bytes ->
+                        newStorageRef.putBytes(bytes).await()
+                    }
+
+                    // Get the new download URL
+                    val newDownloadUrl = newStorageRef.downloadUrl.await().toString()
+
+                    // Delete the old file
+                    oldStorageRef.delete().await()
+
+                    // Update Firestore document
+                    val documentRef = firestore.collection("files")
+                        .document(userId)
+                        .collection("userFiles")
+                        .document(fileRecord.id)
+
+                    documentRef.update(
+                        mapOf(
+                            "filename" to newFileName,
+                            "downloadUrl" to newDownloadUrl
+                        )
+                    ).await()
+
+                    // Update local state
+                    _fileState.update { currentState ->
+                        val updatedList = currentState.filesList.map {
+                            if (it.id == fileRecord.id) {
+                                it.copy(filename = newFileName, downloadUrl = newDownloadUrl)
+                            } else it
+                        }
+                        currentState.copy(
+                            filesList = updatedList,
+                            completionMessage = "File updated successfully.",
+                            isLoading = false
+                        )
+                    }
+                    notification.showScanNotification(
+                        "File Updated",
+                        "File updated successfully.",
+                        100
+                    )
+                } ?: throw IllegalStateException("Download URL is missing.")
+
+            } catch (e: Exception) {
+                val errorMessage = when (e) {
+                    is SecurityException -> "User authentication required."
+                    is IllegalStateException -> "File information is incomplete."
+                    else -> "Failed to update file: ${e.message ?: "Unknown error"}"
+                }
+                _fileState.update {
+                    it.copy(
+                        errorMessage = errorMessage,
+                        isLoading = false
+                    )
+                }
+                notification.showScanNotification("Update Failed", errorMessage)
+            }
+        }
+    }
+
+
 
     /**
      * Sanitizes the filename to prevent issues with Firebase Storage paths.

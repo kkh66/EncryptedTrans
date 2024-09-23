@@ -5,10 +5,12 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.example.encryptedtrans.data.FileData
+import com.example.encryptedtrans.data.UserProfileImage
 
-@Database(entities = [FileData::class], version = 1)
+@Database(entities = [FileData::class, UserProfileImage::class], version = 2)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun fileDao(): FileDao
+    abstract fun userProfileDao(): UserProfileDao
 
     companion object {
         @Volatile
@@ -20,7 +22,9 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "Encrypt_protect_use"
-                ).build()
+                )
+                    .fallbackToDestructiveMigration()
+                    .build()
                 INSTANCE = instance
                 instance
             }

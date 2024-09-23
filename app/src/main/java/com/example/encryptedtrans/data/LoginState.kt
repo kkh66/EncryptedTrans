@@ -1,6 +1,6 @@
 package com.example.encryptedtrans.data
 
-data class LoginData(
+data class LoginState(
     val isLoading: Boolean = false,
     val isLoginSuccessful: Boolean = false,
     val errorMessage: String? = null,

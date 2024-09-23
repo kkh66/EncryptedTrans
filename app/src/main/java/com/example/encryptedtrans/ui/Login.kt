@@ -4,6 +4,7 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -31,7 +32,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -52,6 +52,36 @@ fun LoginUi(
 ) {
     val context = LocalContext.current
     var showResetDialog by remember { mutableStateOf(false) }
+    val loginSuccessful = stringResource(id = R.string.login_successful)
+    val resetSuccess = stringResource(R.string.password_reset_email_sent)
+    val googleFail = stringResource(R.string.google_failed)
+    val scrollState = rememberScrollState()
+
+    //Base on System Theme change logo
+    val logoUse = if (isSystemInDarkTheme()) {
+        R.drawable.logo_use
+    } else {
+        R.drawable.logo_company_removebg_preview
+    }
+
+
+    LaunchedEffect(viewModel.loginState) {
+        when {
+            viewModel.loginState.isLoginSuccessful -> {
+                Toast.makeText(context, loginSuccessful, Toast.LENGTH_SHORT).show()
+                navController.navigate(EncryptedTransScreen.Main.name)
+            }
+
+            viewModel.loginState.isPasswordResetSent -> {
+                Toast.makeText(context, resetSuccess, Toast.LENGTH_SHORT).show()
+            }
+
+            viewModel.loginState.errorMessage != null -> {
+                Toast.makeText(context, viewModel.loginState.errorMessage, Toast.LENGTH_SHORT)
+                    .show()
+            }
+        }
+    }
 
     // Password reset dialog
     if (showResetDialog) {
@@ -81,26 +111,7 @@ fun LoginUi(
         )
     }
 
-    // Handle different login states in a single LaunchedEffect
-    LaunchedEffect(viewModel.loginState) {
-        when {
-            viewModel.loginState.isLoginSuccessful -> {
-                Toast.makeText(context, "Login successful!", Toast.LENGTH_SHORT).show()
-                navController.navigate(EncryptedTransScreen.Main.name)
-            }
-
-            viewModel.loginState.isPasswordResetSent -> {
-                Toast.makeText(context, "Password reset email sent!", Toast.LENGTH_SHORT).show()
-            }
-
-            viewModel.loginState.errorMessage != null -> {
-                Toast.makeText(context, viewModel.loginState.errorMessage, Toast.LENGTH_SHORT)
-                    .show()
-            }
-        }
-    }
-
-    // Google sign-in launcher
+    // Google sign-in use
     val googleSignInLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -111,11 +122,9 @@ fun LoginUi(
                 viewModel.signInWithGoogle(token)
             }
         } catch (e: ApiException) {
-            Toast.makeText(context, "Google sign-in failed", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, googleFail, Toast.LENGTH_SHORT).show()
         }
     }
-
-    val scrollState = rememberScrollState()
 
     Box(
         modifier = Modifier
@@ -123,14 +132,14 @@ fun LoginUi(
             .fillMaxHeight()
             .verticalScroll(scrollState),
     ) {
-        Column {
+        Column(modifier = Modifier.padding(top = 60.dp)) {
             Image(
-                painter = painterResource(id = R.drawable.logo_use),
-                contentDescription = "Company Logo",
+                painter = painterResource(id = logoUse),
+                contentDescription = stringResource(id = R.string.app_name),
                 modifier = Modifier
-                    .size(300.dp)
+                    .size(350.dp)
                     .fillMaxSize()
-                    .padding(top = 20.dp)
+                    .padding(top = 60.dp)
                     .align(Alignment.CenterHorizontally)
             )
 
@@ -162,9 +171,6 @@ fun LoginUi(
                 ) {
                     Text(stringResource(id = R.string.forgot_password))
                 }
-
-                Spacer(modifier = Modifier.height(5.dp))
-
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -178,9 +184,13 @@ fun LoginUi(
                         )
                     } else {
                         Button(
-                            onClick = { viewModel.login() },
+                            onClick = {
+
+                                viewModel.login()
+                            },
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .padding(0.dp)
                                 .height(50.dp)
                         ) {
                             Text(stringResource(id = R.string.login))
@@ -191,19 +201,17 @@ fun LoginUi(
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            // Navigation to Register screen
             TextButton(
                 onClick = { navController.navigate(EncryptedTransScreen.Register.name) },
                 modifier = Modifier
                     .height(50.dp)
                     .align(Alignment.CenterHorizontally)
             ) {
-                Text("No Account? Sign Up")
+                Text(stringResource(id = R.string.sign_up))
             }
 
-            HorizontalDivider(color = Color.White, thickness = 2.dp)
+            HorizontalDivider(thickness = 2.dp)
 
-            // Google sign-in button
             Button(
                 onClick = {
                     val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
@@ -220,28 +228,13 @@ fun LoginUi(
             ) {
                 Image(
                     painter = painterResource(id = R.drawable.google),
-                    contentDescription = "Google",
+                    contentDescription = stringResource(R.string.google),
                     modifier = Modifier.size(30.dp)
                 )
-                Text("Continue with Google", modifier = Modifier.padding(start = 10.dp))
-            }
-
-            // Facebook sign-in button
-            Button(
-                onClick = {
-                    // Handle Facebook sign-in logic
-                },
-                modifier = Modifier
-                    .padding(top = 10.dp)
-                    .height(55.dp)
-                    .fillMaxWidth()
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable._968764),
-                    contentDescription = "Facebook",
-                    modifier = Modifier.size(30.dp)
+                Text(
+                    stringResource(id = R.string.continue_with_google),
+                    modifier = Modifier.padding(start = 10.dp)
                 )
-                Text("Continue with Facebook", modifier = Modifier.padding(start = 10.dp))
             }
         }
     }

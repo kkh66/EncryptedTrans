@@ -2,6 +2,7 @@ package com.example.encryptedtrans.ui
 
 import android.widget.Toast
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -36,22 +37,24 @@ import com.example.encryptedtrans.viewmodel.RegisterViewModel
 fun Register(
     viewModel: RegisterViewModel,
     navController: NavController,
-
-    ) {
+) {
     val context = LocalContext.current
-    val registrationSuccessfulText = stringResource(R.string.registration_successful)
+    val registerSuccessful = stringResource(R.string.registration_successful)
 
-    LaunchedEffect(viewModel.registerState.errorMessage) {
+    LaunchedEffect(viewModel.registerState) {
         viewModel.registerState.errorMessage?.let {
             Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
         }
-    }
-
-    LaunchedEffect(viewModel.registerState.isRegistrationSuccessful) {
         if (viewModel.registerState.isRegistrationSuccessful) {
-            Toast.makeText(context, registrationSuccessfulText, Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, registerSuccessful, Toast.LENGTH_SHORT).show()
             navController.navigate(EncryptedTransScreen.Login.name)
         }
+    }
+
+    val logoUse = if (isSystemInDarkTheme()) {
+        R.drawable.logo_use
+    } else {
+        R.drawable.logo_company_removebg_preview
     }
 
     Box(
@@ -65,9 +68,9 @@ fun Register(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Image(
-                painter = painterResource(id = R.drawable.logo_use),
+                painter = painterResource(id = logoUse),
                 contentDescription = stringResource(R.string.app_name),
-                modifier = Modifier.size(300.dp)
+                modifier = Modifier.size(280.dp)
             )
             OutlinedTextField(value = viewModel.username,
                 onValueChange = { viewModel.updateUsername(it) },
@@ -128,7 +131,7 @@ fun Register(
                 .align(Alignment.BottomCenter),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            TextButton(onClick = { navController.navigate("login") }) {
+            TextButton(onClick = { navController.navigate(EncryptedTransScreen.Login.name) }) {
                 Text(stringResource(R.string.already_have_account))
             }
         }

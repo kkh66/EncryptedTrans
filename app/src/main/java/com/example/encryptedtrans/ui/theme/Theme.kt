@@ -16,12 +16,14 @@ private val DarkColorScheme = darkColorScheme(
     primary = Purple80,
     onPrimary = Color.White,
     background = Darkuse,
+    outline = Color.White
 )
 
 private val LightColorScheme = lightColorScheme(
     primary = Purple40,
-    //onPrimary = Color.Black,
-    background = Darkuse,
+    onPrimary = Color.White,
+    background = Color.White,
+    outline = Color.Black
 
     /* Other default colors to override
     background = Color(0xFFFFFBFE),
@@ -41,15 +43,8 @@ fun EncryptedTransTheme(
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicDarkColorScheme(context)
-        }
+    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
 
-        darkTheme -> DarkColorScheme
-        else -> DarkColorScheme
-    }
 
     MaterialTheme(
         colorScheme = colorScheme,

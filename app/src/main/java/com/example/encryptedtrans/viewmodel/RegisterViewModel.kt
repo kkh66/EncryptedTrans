@@ -42,11 +42,13 @@ class RegisterViewModel(private val auth: Auth) : ViewModel() {
         username = registerUsername
     }
 
+    /**
+     * Register function,first validate using the Util and then use the auth register function
+     **/
     fun register() {
         viewModelScope.launch {
             registerState = registerState.copy(isLoading = true, errorMessage = null)
 
-            //check the input validate or not
             if (!validateInputs()) {
                 registerState = registerState.copy(isLoading = false)
                 return@launch
@@ -58,15 +60,18 @@ class RegisterViewModel(private val auth: Auth) : ViewModel() {
                     is Auth.AuthResult.Success -> {
                         registerState.copy(isRegistrationSuccessful = true)
                     }
+
                     is Auth.AuthResult.Error -> {
                         registerState.copy(errorMessage = result.message)
                     }
+
                     else -> {
                         registerState.copy(errorMessage = "Unexpected response during registration.")
                     }
                 }
             } catch (e: Exception) {
-                registerState = registerState.copy(errorMessage = "Registration failed: ${e.message}")
+                registerState =
+                    registerState.copy(errorMessage = "Registration failed: ${e.message}")
                 clearInputs()
             } finally {
                 registerState = registerState.copy(isLoading = false)
@@ -77,12 +82,12 @@ class RegisterViewModel(private val auth: Auth) : ViewModel() {
     private fun validateInputs(): Boolean {
         val errorMessage = when {
             username.isBlank() -> "Username cannot be empty"
-            !utils.validateUsername(username) -> "invalid_username_format"
+            !utils.validateUsername(username) -> "Invalid Username Format"
             email.isBlank() -> "Email cannot be empty"
-            !utils.validateEmail(email) -> "invalid_email_format"
-            password.isBlank() -> "Password cannot be empty"
-            !utils.validatePassword(password) -> "invalid_password_format"
-            !utils.passwordsMatch(password, confirmPassword) -> "passwords_do_not_match"
+            !utils.validateEmail(email) -> "Invalid Email Format"
+            password.isBlank() -> "Password Cannot Be Empty"
+            !utils.validatePassword(password) -> "Invalid Password Format"
+            !utils.passwordsMatch(password, confirmPassword) -> "Passwords Do Not Match"
             else -> null
         }
 

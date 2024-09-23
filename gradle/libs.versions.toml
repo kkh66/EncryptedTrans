@@ -30,6 +30,8 @@ playServicesAuth = "21.2.0"
 roomCommon = "2.6.1"
 roomKtx = "2.6.1"
 lifecycleLivedataKtx = "2.8.6"
+firebaseDynamicLinksKtx = "22.1.0"
+media3CommonKtx = "1.4.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -68,6 +70,8 @@ play-services-auth = { group = "com.google.android.gms", name = "play-services-a
 androidx-room-common = { group = "androidx.room", name = "room-common", version.ref = "roomCommon" }
 androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "roomKtx" }
 androidx-lifecycle-livedata-ktx = { group = "androidx.lifecycle", name = "lifecycle-livedata-ktx", version.ref = "lifecycleLivedataKtx" }
+firebase-dynamic-links-ktx = { group = "com.google.firebase", name = "firebase-dynamic-links-ktx", version.ref = "firebaseDynamicLinksKtx" }
+androidx-media3-common-ktx = { group = "androidx.media3", name = "media3-common-ktx", version = "1.5.0-alpha01" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

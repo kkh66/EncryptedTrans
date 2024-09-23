@@ -7,7 +7,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.encryptedtrans.Auth
-import com.example.encryptedtrans.data.LoginData
+import com.example.encryptedtrans.data.LoginState
 import com.example.encryptedtrans.utils.Utils
 import kotlinx.coroutines.launch
 
@@ -19,7 +19,7 @@ class LoginViewModel(private val auth: Auth) : ViewModel() {
     var resetEmail by mutableStateOf("")
         private set
 
-    var loginState by mutableStateOf(LoginData())
+    var loginState by mutableStateOf(LoginState())
         private set
 
     private val utils = Utils()

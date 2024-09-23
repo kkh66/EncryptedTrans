@@ -21,6 +21,9 @@ class Auth {
         data class Error(val message: String) : AuthResult()
     }
 
+    /**
+     * Register Account at the Authentication and then also at the Cloud Firestore
+     **/
     suspend fun registerUser(email: String, password: String, username: String): AuthResult {
         return try {
             val result = auth.createUserWithEmailAndPassword(email, password).await()
@@ -60,6 +63,7 @@ class Auth {
             if (user != null && user.email != null) {
                 // If the user is already logged in link Google to the account
                 user.linkWithCredential(credential).await()
+                AuthResult.Success(user)
             } else {
                 // Otherwise, sign in using Google
                 val result = auth.signInWithCredential(credential).await()
@@ -75,15 +79,14 @@ class Auth {
                     db.collection("users").document(googleUser.uid).set(newUser).await()
                 }
 
-                val username = userDoc.getString("username") ?: googleUser.displayName ?: "Unknown User"
+                val username =
+                    userDoc.getString("username") ?: googleUser.displayName ?: "Unknown User"
                 googleUser.updateProfile(userProfileChangeRequest {
                     displayName = username
                 }).await()
 
-                return AuthResult.Success(googleUser)
+                AuthResult.Success(googleUser)
             }
-
-            AuthResult.Success(user ?: throw Exception("User is null"))
         } catch (e: Exception) {
             AuthResult.Error(e.message ?: "An unknown error occurred")
         }
@@ -129,7 +132,6 @@ class Auth {
 
             AuthResult.Success(user)
         } catch (e: Exception) {
-            // Handle specific reauthentication errors
             if (e is FirebaseAuthInvalidCredentialsException) {
                 return AuthResult.Error("Please check your email and password")
             } else if (e is FirebaseAuthUserCollisionException) {
@@ -139,7 +141,20 @@ class Auth {
         }
     }
 
-
+    /**
+    Changing Password Function at User Profile
+     **/
+    suspend fun changePassword(currentPassword: String, newPassword: String): AuthResult {
+        return try {
+            val user = auth.currentUser ?: throw Exception("User is not logged in")
+            val credential = EmailAuthProvider.getCredential(user.email!!, currentPassword)
+            user.reauthenticate(credential).await()
+            user.updatePassword(newPassword).await()
+            AuthResult.Success(user)
+        } catch (e: Exception) {
+            AuthResult.Error(e.message ?: "An unknown error occurred")
+        }
+    }
 
 
     fun logoutUser() {

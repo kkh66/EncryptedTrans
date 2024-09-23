@@ -2,6 +2,8 @@ package com.example.encryptedtrans
 
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -15,46 +17,39 @@ import com.example.encryptedtrans.viewmodel.LoginViewModel
 import com.example.encryptedtrans.viewmodel.RegisterViewModel
 
 enum class EncryptedTransScreen {
-    Login,
-    Main,
-    Register,
-    Folder,
-    Home,
-    Account,
-    EditUser,
-    Result
+    Login, Main, Register, Folder, Home, Account, EditUser
 }
 
 @Composable
 fun NavControl(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
-    auth: Auth = Auth()
+    auth: Auth = Auth(),
+    isDarkTheme: Boolean,
+    onThemeChange: (Boolean) -> Unit
 ) {
-    val check_login = if (auth.isUserLoggedIn()) {
-        EncryptedTransScreen.Main.name
-    } else {
-        EncryptedTransScreen.Login.name
-    }
-    NavHost(
-        navController = navController,
-        startDestination = check_login,
-        builder = {
-            composable(EncryptedTransScreen.Login.name) {
-                LoginUi(navController,
-                    viewModel = viewModel { LoginViewModel(auth) }
-                )
-            }
-            composable(EncryptedTransScreen.Main.name) {
-                MainUi(modifier, navController)
-            }
-            composable(EncryptedTransScreen.Register.name) {
-                Register(
-                    viewModel = viewModel { RegisterViewModel(auth) },
-                    navController
-                )
-            }
-        }
+    val check_login by rememberUpdatedState(
+        if (auth.isUserLoggedIn()) EncryptedTransScreen.Main.name
+        else EncryptedTransScreen.Login.name
     )
+
+    NavHost(navController = navController, startDestination = check_login, builder = {
+        composable(EncryptedTransScreen.Login.name) {
+            LoginUi(navController, viewModel = viewModel { LoginViewModel(auth) })
+        }
+        composable(EncryptedTransScreen.Main.name) {
+            MainUi(
+                modifier,
+                navController,
+                isDarkTheme = isDarkTheme,
+                onThemeChange = onThemeChange
+            )
+        }
+        composable(EncryptedTransScreen.Register.name) {
+            Register(
+                viewModel = viewModel { RegisterViewModel(auth) }, navController
+            )
+        }
+    })
 }
 

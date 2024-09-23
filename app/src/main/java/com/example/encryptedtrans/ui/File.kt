@@ -1,20 +1,31 @@
 package com.example.encryptedtrans.ui
 
+import android.app.DatePickerDialog
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.graphics.Bitmap
+import android.widget.Toast
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
@@ -22,25 +33,26 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SearchBarDefaults
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,21 +60,33 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.encryptedtrans.viewmodel.FileViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.encryptedtrans.R
 import com.example.encryptedtrans.data.FileRecord
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.MultiFormatWriter
+import com.journeyapps.barcodescanner.BarcodeEncoder
 import io.github.vinceglb.filekit.compose.rememberFilePickerLauncher
 import io.github.vinceglb.filekit.core.FileKitPlatformSettings
 import io.github.vinceglb.filekit.core.PickerMode
 import io.github.vinceglb.filekit.core.PickerType
 import io.github.vinceglb.filekit.core.PlatformDirectory
 import io.github.vinceglb.filekit.core.PlatformFile
+import kotlinx.coroutines.delay
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -80,9 +104,21 @@ fun FileUi(
 
     var files: Set<PlatformFile> by remember { mutableStateOf(emptySet()) }
     val directory: PlatformDirectory? by remember { mutableStateOf(null) }
+    var selectedFileForSharing by remember { mutableStateOf<FileRecord?>(null) }
+    var showShareDialog by remember { mutableStateOf(false) }
+
+    var useCustomPin by remember { mutableStateOf(false) }
+    var customPin by remember { mutableStateOf("") }
+    var useTimeLimitedSharing by remember { mutableStateOf(false) }
+    var expirationDate by remember { mutableStateOf<Date?>(null) }
+    var generateQRCode by remember { mutableStateOf(false) }
+    var showDatePicker by remember { mutableStateOf(false) }
+
+    var shareUrl by remember { mutableStateOf("") }
+    var showShareUrlDialog by remember { mutableStateOf(false) }
+    var showUserSelectionDialog by remember { mutableStateOf(false) }
 
 
-    val infiniteTransition = rememberInfiniteTransition()
     val singleFilePicker = rememberFilePickerLauncher(
         type = PickerType.File(extensions = listOf("pdf", "docx")),
         title = "Single file picker",
@@ -97,12 +133,6 @@ fun FileUi(
         platformSettings = platformSettings
     )
 
-    val rotationAngle by infiniteTransition.animateFloat(
-        initialValue = 0f, targetValue = 360f, animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ), label = ""
-    )
     Column(
         modifier = Modifier.padding(0.dp),
         verticalArrangement = Arrangement.Top,
@@ -162,19 +192,11 @@ fun FileUi(
                 Box {
                     Column {
                         Text(
-                            text = stringResource(id = R.string.search_result),
-                            color = Color.Black,
-                            modifier = Modifier
-                                .padding(5.dp)
-                                .align(Alignment.CenterHorizontally)
+                            stringResource(id = R.string.folder),
+                            fontSize = 24.sp,
+                            color = Color.White
                         )
-                        HorizontalDivider(
-                            modifier = Modifier
-                                .padding(start = 10.dp, end = 10.dp)
-                                .fillMaxWidth(),
-                            color = Color.Gray,
-                            thickness = 2.dp
-                        )
+                        Spacer(modifier = Modifier.height(16.dp))
                     }
                 }
                 LazyColumn(
@@ -194,19 +216,22 @@ fun FileUi(
                             onDelete = {
                                 viewModel.deleteFile(context, fileRecord)
                             },
-                            onShare = {}
+                            onShare = {
+                                selectedFileForSharing = fileRecord
+                                showShareDialog = true
+                            },
+                            onUpdate = {},
+                            showShareButton = true
                         )
                     }
                 }
 
             }
         }
-
-
         Box(
             modifier = Modifier
                 .padding(5.dp)
-                .border(2.dp, Color.White)
+                .border(2.dp, color = MaterialTheme.colorScheme.outline)
                 .fillMaxSize()
         ) {
             Column(
@@ -229,7 +254,6 @@ fun FileUi(
 
                 when {
                     fileState.isLoading -> {
-                        // Show loading indicator if loading
                         CircularProgressIndicator(
                             strokeWidth = 4.dp,
                             strokeCap = StrokeCap.Round,
@@ -239,7 +263,6 @@ fun FileUi(
                     }
 
                     fileState.filesList.isEmpty() -> {
-                        // Show empty state if no files are found
                         Text(
                             text = "No files available in this folder",
                             color = Color.White,
@@ -264,10 +287,16 @@ fun FileUi(
                                     onDelete = {
                                         viewModel.deleteFile(context, fileRecord)
                                     },
-                                    onShare = {}
+                                    onShare = {
+                                        selectedFileForSharing = fileRecord
+                                        showShareDialog = true
+                                    },
+                                    onUpdate = { newFileName ->
+                                        viewModel.updateFileName(fileRecord, newFileName)
+                                    },
+                                    showShareButton = true
                                 )
                             }
-
                         }
                     }
                 }
@@ -291,102 +320,251 @@ fun FileUi(
             }
         }
     }
+
+    if (showShareDialog) {
+        AlertDialog(
+            onDismissRequest = { showShareDialog = false },
+            title = { Text("Share File: ${selectedFileForSharing?.filename}") },
+            text = {
+                Column {
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Custom PIN Encrypt")
+                        Switch(
+                            checked = useCustomPin,
+                            onCheckedChange = { useCustomPin = it }
+                        )
+                    }
+                    if (useCustomPin) {
+                        OutlinedTextField(
+                            value = customPin,
+                            onValueChange = { customPin = it },
+                            label = { Text("Enter PIN") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Time-Limited Sharing")
+                        Switch(
+                            checked = useTimeLimitedSharing,
+                            onCheckedChange = { useTimeLimitedSharing = it }
+                        )
+                    }
+                    if (useTimeLimitedSharing) {
+                        Button(
+                            onClick = { showDatePicker = true },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = expirationDate?.let {
+                                    "Expiration Date: ${
+                                        SimpleDateFormat(
+                                            "dd/MM/yyyy",
+                                            Locale.getDefault()
+                                        ).format(it)
+                                    }"
+                                } ?: "Select Expiration Date"
+                            )
+                        }
+                    }
+
+                    if (showDatePicker) {
+                        val calendar = Calendar.getInstance()
+                        calendar.add(Calendar.DAY_OF_YEAR, 1)
+                        DatePickerDialog(
+                            context,
+                            { _, year, month, dayOfMonth ->
+                                calendar.set(year, month, dayOfMonth)
+                                expirationDate = calendar.time
+                                showDatePicker = false
+                            },
+                            calendar.get(Calendar.YEAR),
+                            calendar.get(Calendar.MONTH),
+                            calendar.get(Calendar.DAY_OF_MONTH)
+                        ).apply {
+                            datePicker.minDate = calendar.timeInMillis
+                            show()
+                        }
+                    }
+
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Generate QR Code")
+                        Switch(
+                            checked = generateQRCode,
+                            onCheckedChange = { generateQRCode = it }
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    showShareDialog = false
+                    // Proceed to user selection dialog
+                    showUserSelectionDialog = true
+                }) {
+                    Text("Share Now")
+                }
+            },
+            dismissButton = {
+                Button(onClick = { showShareDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+
+    if (showUserSelectionDialog) {
+        UserSelectionDialog(
+            viewModel = viewModel,
+            onDismiss = { showUserSelectionDialog = false },
+            onConfirm = { selectedUserIds ->
+                viewModel.shareFile(
+                    selectedFileForSharing,
+                    selectedUserIds,
+                    if (useCustomPin) customPin else null,
+                    expirationDate
+                )
+                showUserSelectionDialog = false
+                // Optionally show a confirmation dialog or message
+                shareUrl = selectedFileForSharing?.downloadUrl ?: ""
+                showShareUrlDialog = true
+            }
+        )
+    }
+
+    if (generateQRCode && selectedFileForSharing?.downloadUrl != null) {
+        val downloadUrl = selectedFileForSharing!!.downloadUrl!!
+        val qrCodeBitmap = generateQRCodeBitmap(downloadUrl)
+        AlertDialog(
+            onDismissRequest = { generateQRCode = false },
+            title = { Text("QR Code") },
+            text = {
+                qrCodeBitmap?.let {
+                    Image(
+                        bitmap = it.asImageBitmap(),
+                        contentDescription = "QR Code",
+                        modifier = Modifier.size(200.dp)
+                    )
+                } ?: Text("Failed to generate QR code.")
+            },
+            confirmButton = {
+                Button(onClick = { generateQRCode = false }) {
+                    Text("Close")
+                }
+            }
+        )
+    }
+
+    if (showShareUrlDialog) {
+        AlertDialog(
+            onDismissRequest = { showShareUrlDialog = false },
+            title = { Text("File Shared Successfully") },
+            text = {
+                Column {
+                    Text("Your file has been shared. Use the following URL to access the file:")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = shareUrl,
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val clipboardManager =
+                            context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        val clipData = ClipData.newPlainText("Shared File URL", shareUrl)
+                        clipboardManager.setPrimaryClip(clipData)
+                        Toast.makeText(context, "URL copied to clipboard", Toast.LENGTH_SHORT)
+                            .show()
+                        showShareUrlDialog = false
+                    }
+                ) {
+                    Text("Copy URL")
+                }
+            },
+            dismissButton = {
+                Button(onClick = { showShareUrlDialog = false }) {
+                    Text("Close")
+                }
+            }
+        )
+    }
+}
+
+
+@Composable
+fun generateQRCodeBitmap(content: String): Bitmap? {
+    return try {
+        val multiFormatWriter = MultiFormatWriter()
+        val bitMatrix = multiFormatWriter.encode(content, BarcodeFormat.QR_CODE, 500, 500)
+        val barcodeEncoder = BarcodeEncoder()
+        barcodeEncoder.createBitmap(bitMatrix)
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
+    }
 }
 
 @Composable
-fun FileCard(
-    fileRecord: FileRecord,
-    onDownload: () -> Unit,
-    onOpenFile: () -> Unit,
-    onDelete: () -> Unit,
-    onShare: () -> Unit
+fun UserSelectionDialog(
+    viewModel: FileViewModel = viewModel(),
+    onDismiss: () -> Unit,
+    onConfirm: (List<String>) -> Unit
 ) {
-    var showMenu by remember { mutableStateOf(false) }
+    val usersList by viewModel.usersList.collectAsState()
+    var selectedUserIds by remember { mutableStateOf<List<String>>(emptyList()) }
 
-    val maxFilenameLength = 15
-
-
-    val limitFilename = if (fileRecord.filename.length > maxFilenameLength) {
-        fileRecord.filename.take(maxFilenameLength) + "..."
-    } else {
-        fileRecord.filename
+    LaunchedEffect(Unit) {
+        viewModel.fetchUsers()
     }
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+    AlertDialog(
+        onDismissRequest = { onDismiss() },
+        title = { Text("Select Users to Share With") },
+        text = {
             Column {
-                Text(
-                    text = limitFilename,
-                    style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
-                    color = Color.Black
-                )
-                Text(
-                    text = "Date: ${fileRecord.timeUpload}",
-                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
-                )
+                LazyColumn {
+                    items(usersList) { user ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked = selectedUserIds.contains(user.id),
+                                onCheckedChange = { isChecked ->
+                                    selectedUserIds = if (isChecked) {
+                                        selectedUserIds + user.id
+                                    } else {
+                                        selectedUserIds - user.id
+                                    }
+                                }
+                            )
+                            Text(text = "${user.name} (${user.email})")
+                        }
+                    }
+                }
             }
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-
-                IconButton(onClick = { onShare() }) {
-                    Icon(
-                        imageVector = Icons.Default.Share,
-                        contentDescription = "Share",
-                        tint = Color(0xFF000080) // Dark blue icon
-                    )
-                }
-
-                Box {
-                    IconButton(onClick = { showMenu = !showMenu }) {
-                        Icon(
-                            imageVector = Icons.Default.MoreVert,
-                            contentDescription = "Menu",
-                            tint = Color(0xFF000080)
-                        )
-                    }
-
-                    DropdownMenu(
-                        expanded = showMenu,
-                        onDismissRequest = { showMenu = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("Download File") },
-                            onClick = {
-                                onDownload()
-                                showMenu = false
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Open File") },
-                            onClick = {
-                                onOpenFile()
-                                showMenu = false
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Delete File") },
-                            onClick = {
-                                onDelete()
-                                showMenu = false
-                            }
-                        )
-                    }
-                }
+        },
+        confirmButton = {
+            Button(onClick = {
+                onConfirm(selectedUserIds)
+            }) {
+                Text("Share")
+            }
+        },
+        dismissButton = {
+            Button(onClick = { onDismiss() }) {
+                Text(stringResource(R.string.cancel))
             }
         }
-
-    }
+    )
 }
