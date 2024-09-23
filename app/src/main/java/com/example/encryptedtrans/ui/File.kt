@@ -33,11 +33,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -48,6 +49,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SearchBarDefaults
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
@@ -92,13 +96,16 @@ import java.util.Locale
 @Composable
 fun FileUi(
     viewModel: FileViewModel = viewModel(),
-    platformSettings: FileKitPlatformSettings?
+    platformSettings: FileKitPlatformSettings?,
+    onFabClick: (() -> Unit) -> Unit
 ) {
     val context = LocalContext.current
     val fileState by viewModel.fileState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     val searchQuery by viewModel.searchQuery.collectAsState()
     val filteredFiles by viewModel.filteredFilesList.collectAsState()
+
 
     var isSearchActive by remember { mutableStateOf(false) }
 
@@ -113,14 +120,30 @@ fun FileUi(
     var expirationDate by remember { mutableStateOf<Date?>(null) }
     var generateQRCode by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
-
     var shareUrl by remember { mutableStateOf("") }
     var showShareUrlDialog by remember { mutableStateOf(false) }
     var showUserSelectionDialog by remember { mutableStateOf(false) }
 
+    LaunchedEffect(Unit) {
+        onFabClick {
+            viewModel.refreshFiles()
+        }
+    }
+
+    LaunchedEffect(fileState.isLoading) {
+        if (fileState.isLoading) {
+            snackbarHostState.showSnackbar(
+                "Loading files...",
+                duration = SnackbarDuration.Indefinite
+            )
+        } else {
+            snackbarHostState.currentSnackbarData?.dismiss()
+        }
+    }
+
 
     val singleFilePicker = rememberFilePickerLauncher(
-        type = PickerType.File(extensions = listOf("pdf", "docx")),
+        type = PickerType.File(extensions = listOf("pdf", "docx", "txt")),
         title = "Single file picker",
         mode = PickerMode.Single,
         initialDirectory = directory?.path,
@@ -151,15 +174,13 @@ fun FileUi(
             windowInsets = WindowInsets(top = 0.dp),
             placeholder = {
                 Text(
-                    stringResource(id = R.string.search_field),
-                    color = Color.Black
+                    stringResource(id = R.string.search_field)
                 )
             },
             leadingIcon = {
                 Icon(
                     Icons.Default.Search,
-                    contentDescription = stringResource(id = R.string.search_icon),
-                    tint = Color.Black
+                    contentDescription = stringResource(id = R.string.search_icon)
                 )
             },
             trailingIcon = {
@@ -174,56 +195,50 @@ fun FileUi(
                         )
                     }
                 }
-            },
-            colors = SearchBarDefaults.colors(
-                containerColor = Color.White,
-                inputFieldColors = TextFieldDefaults.colors(
-                    Color.Black
-                )
-            ),
+            }
         ) {
             if (filteredFiles.isEmpty()) {
                 Text(
                     text = stringResource(id = R.string.search_empty),
-                    color = Color.Black,
                     modifier = Modifier.padding(16.dp)
                 )
             } else {
                 Box {
-                    Column {
-                        Text(
-                            stringResource(id = R.string.folder),
-                            fontSize = 24.sp,
-                            color = Color.White
-                        )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
                         Spacer(modifier = Modifier.height(16.dp))
+                        LazyColumn(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentPadding = PaddingValues(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(filteredFiles) { fileRecord ->
+                                FileCard(
+                                    fileRecord = fileRecord,
+                                    onDownload = {
+                                        viewModel.downloadFile(context, fileRecord)
+                                    },
+                                    onOpenFile = {
+                                        viewModel.openFile(context, fileRecord)
+                                    },
+                                    onDelete = {
+                                        viewModel.deleteFile(context, fileRecord)
+                                    },
+                                    onShare = {
+                                        selectedFileForSharing = fileRecord
+                                        showShareDialog = true
+                                    },
+                                    onUpdate = { newFileName ->
+                                        viewModel.updateFileName(fileRecord, newFileName)
+                                    }
+                                )
+                            }
+                        }
                     }
-                }
-                LazyColumn(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(filteredFiles) { fileRecord ->
-                        FileCard(
-                            fileRecord = fileRecord,
-                            onDownload = {
-                                viewModel.downloadFile(context, fileRecord)
-                            },
-                            onOpenFile = {
-                                viewModel.openFile(context, fileRecord)
-                            },
-                            onDelete = {
-                                viewModel.deleteFile(context, fileRecord)
-                            },
-                            onShare = {
-                                selectedFileForSharing = fileRecord
-                                showShareDialog = true
-                            },
-                            onUpdate = {},
-                            showShareButton = true
-                        )
-                    }
+
+
                 }
 
             }
@@ -241,30 +256,67 @@ fun FileUi(
             ) {
                 Text(
                     stringResource(R.string.folder),
-                    modifier = Modifier.padding(3.dp),
-                    color = Color.White
+                    modifier = Modifier.padding(top = 5.dp),
+                    fontSize = 30.sp
                 )
+
                 HorizontalDivider(
                     modifier = Modifier
-                        .padding(10.dp)
+                        .padding(start = 30.dp, end = 30.dp, top = 0.dp, bottom = 0.dp)
                         .fillMaxWidth(),
-                    color = Color.Gray,
-                    thickness = 2.dp
+                    color = MaterialTheme.colorScheme.outline, thickness = 2.dp
                 )
 
                 when {
                     fileState.isLoading -> {
-                        CircularProgressIndicator(
-                            strokeWidth = 4.dp,
-                            strokeCap = StrokeCap.Round,
-                            color = Color.Yellow,
-                            modifier = Modifier.size(50.dp)
-                        )
+                        // Display the progress indicator as a snackbar
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            SnackbarHost(
+                                hostState = snackbarHostState,
+                                modifier = Modifier.align(Alignment.Center)
+                            ) {
+                                // Custom snackbar with loading progress
+                                Card(
+                                    modifier = Modifier.size(96.dp),
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = Color.DarkGray,
+                                        contentColor = Color.White
+                                    ),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
+                                ) {
+                                    // Infinite animation for the progress indicator
+                                    val progress by rememberInfiniteTransition().animateFloat(
+                                        initialValue = 0f,
+                                        targetValue = 1f,
+                                        animationSpec = infiniteRepeatable(
+                                            animation = tween(1000, easing = LinearEasing),
+                                            repeatMode = RepeatMode.Restart
+                                        )
+                                    )
+
+                                    Box(
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        CircularProgressIndicator(
+                                            progress = progress,
+                                            strokeWidth = 4.dp,
+                                            strokeCap = StrokeCap.Round,
+                                            color = Color.Yellow,
+                                            modifier = Modifier
+                                                .size(50.dp)
+                                                .rotate(360 * progress) // Rotate based on progress
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
 
                     fileState.filesList.isEmpty() -> {
                         Text(
-                            text = "No files available in this folder",
+                            text = "No files available in the folder",
                             color = Color.White,
                             modifier = Modifier.padding(16.dp)
                         )
@@ -293,14 +345,19 @@ fun FileUi(
                                     },
                                     onUpdate = { newFileName ->
                                         viewModel.updateFileName(fileRecord, newFileName)
-                                    },
-                                    showShareButton = true
+                                    }
                                 )
                             }
                         }
                     }
                 }
             }
+
+
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
 
             Column(
                 modifier = Modifier
@@ -313,18 +370,22 @@ fun FileUi(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(10.dp)
+                        .height(70.dp)
+                        .padding(16.dp)
                 ) {
-                    Text("Upload File")
+                    Text(stringResource(R.string.upload))
                 }
             }
         }
     }
 
     if (showShareDialog) {
+        val lengthFilename = selectedFileForSharing?.filename?.let {
+            if (it.length > 5) it.take(5) + "..." else it
+        }
         AlertDialog(
             onDismissRequest = { showShareDialog = false },
-            title = { Text("Share File: ${selectedFileForSharing?.filename}") },
+            title = { Text("Share File: $lengthFilename") },
             text = {
                 Column {
                     Row(
@@ -408,15 +469,9 @@ fun FileUi(
             confirmButton = {
                 Button(onClick = {
                     showShareDialog = false
-                    // Proceed to user selection dialog
                     showUserSelectionDialog = true
-                }) {
+                }, modifier = Modifier.fillMaxWidth()) {
                     Text("Share Now")
-                }
-            },
-            dismissButton = {
-                Button(onClick = { showShareDialog = false }) {
-                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -442,22 +497,44 @@ fun FileUi(
     }
 
     if (generateQRCode && selectedFileForSharing?.downloadUrl != null) {
+        showShareDialog = false
         val downloadUrl = selectedFileForSharing!!.downloadUrl!!
         val qrCodeBitmap = generateQRCodeBitmap(downloadUrl)
         AlertDialog(
             onDismissRequest = { generateQRCode = false },
-            title = { Text("QR Code") },
-            text = {
-                qrCodeBitmap?.let {
-                    Image(
-                        bitmap = it.asImageBitmap(),
-                        contentDescription = "QR Code",
-                        modifier = Modifier.size(200.dp)
+            title = {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        stringResource(R.string.qr),
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
                     )
-                } ?: Text("Failed to generate QR code.")
+                }
+            },
+            text = {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()
+                ) {
+                    qrCodeBitmap?.let {
+                        Image(
+                            bitmap = it.asImageBitmap(),
+                            contentDescription = stringResource(R.string.qr),
+                            modifier = Modifier.size(200.dp)
+                        )
+                    } ?: Text(
+                        stringResource(R.string.fail_generate_qr),
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    )
+                }
             },
             confirmButton = {
-                Button(onClick = { generateQRCode = false }) {
+                Button(
+                    onClick = { generateQRCode = false },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                     Text("Close")
                 }
             }
@@ -472,9 +549,6 @@ fun FileUi(
                 Column {
                     Text("Your file has been shared. Use the following URL to access the file:")
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = shareUrl,
-                    )
                 }
             },
             confirmButton = {
@@ -501,7 +575,6 @@ fun FileUi(
     }
 }
 
-
 @Composable
 fun generateQRCodeBitmap(content: String): Bitmap? {
     return try {
@@ -525,7 +598,7 @@ fun UserSelectionDialog(
     var selectedUserIds by remember { mutableStateOf<List<String>>(emptyList()) }
 
     LaunchedEffect(Unit) {
-        viewModel.fetchUsers()
+        viewModel.getUsers()
     }
 
     AlertDialog(

@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
@@ -23,6 +24,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -52,6 +54,7 @@ import com.example.encryptedtrans.Auth
 import com.example.encryptedtrans.EncryptedTransScreen
 import com.example.encryptedtrans.R
 import com.example.encryptedtrans.viewmodel.FileViewModel
+import com.example.encryptedtrans.viewmodel.HomeFileViewModel
 import com.example.encryptedtrans.viewmodel.UserProfileViewModel
 import io.github.vinceglb.filekit.core.FileKitPlatformSettings
 
@@ -68,6 +71,7 @@ fun MainUi(
     val context = LocalContext.current
     val userProfileViewModel: UserProfileViewModel =
         viewModel { UserProfileViewModel(Auth(), context) }
+    var fabAction by remember { mutableStateOf<(() -> Unit)?>(null) }
     val fileViewModel: FileViewModel = viewModel { FileViewModel(Auth(), context) }
     var selectedScreen by remember { mutableStateOf(EncryptedTransScreen.Home) }
     val slogonUse = if (isDarkTheme) {
@@ -114,9 +118,21 @@ fun MainUi(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         listOf(
-                            Triple(Icons.Outlined.Folder to Icons.Filled.Folder, R.string.folder, EncryptedTransScreen.Folder),
-                            Triple(Icons.Outlined.Home to Icons.Filled.Home, R.string.home, EncryptedTransScreen.Home),
-                            Triple(Icons.Outlined.Person to Icons.Filled.Person, R.string.account, EncryptedTransScreen.Account)
+                            Triple(
+                                Icons.Outlined.Folder to Icons.Filled.Folder,
+                                R.string.folder,
+                                EncryptedTransScreen.Folder
+                            ),
+                            Triple(
+                                Icons.Outlined.Home to Icons.Filled.Home,
+                                R.string.home,
+                                EncryptedTransScreen.Home
+                            ),
+                            Triple(
+                                Icons.Outlined.Person to Icons.Filled.Person,
+                                R.string.account,
+                                EncryptedTransScreen.Account
+                            )
                         ).forEach { (icons, labelResId, screen) ->
                             var isHovered by remember { mutableStateOf(false) }
                             Column(
@@ -173,6 +189,16 @@ fun MainUi(
                     }
                 }
             }
+        },
+        floatingActionButton = {
+            if (selectedScreen == EncryptedTransScreen.Folder || selectedScreen == EncryptedTransScreen.Home) {
+                FloatingActionButton(onClick = { fabAction?.invoke() }) {
+                    Icon(
+                        Icons.Default.Refresh,
+                        contentDescription = stringResource(R.string.refresh)
+                    )
+                }
+            }
         }
 
     ) { paddingValues ->
@@ -184,10 +210,13 @@ fun MainUi(
                 .padding(paddingValues)
         ) {
             composable(EncryptedTransScreen.Folder.name) {
-                FileUi(viewModel = fileViewModel, platformSettings = platformSettings)
+                FileUi(
+                    viewModel = fileViewModel,
+                    platformSettings = platformSettings,
+                    onFabClick = { fabAction = it })
             }
             composable(EncryptedTransScreen.Home.name) {
-                HomeUi(viewModel = fileViewModel)
+                HomeUi(viewModel = HomeFileViewModel(Auth()), onFabClick = { fabAction = it })
             }
             composable(EncryptedTransScreen.Account.name) {
                 UserUi(

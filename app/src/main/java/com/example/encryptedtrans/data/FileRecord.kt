@@ -1,7 +1,5 @@
 package com.example.encryptedtrans.data
 
-
-
 data class FileRecord(
     val id: String = "",
     val filename: String = "",

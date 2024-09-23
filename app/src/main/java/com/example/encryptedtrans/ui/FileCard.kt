@@ -28,10 +28,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.encryptedtrans.R
 import com.example.encryptedtrans.data.FileRecord
+
 /**
- * The home and File inside card
+ * File inside card
  * **/
 @Composable
 fun FileCard(
@@ -40,8 +43,7 @@ fun FileCard(
     onOpenFile: () -> Unit,
     onDelete: () -> Unit,
     onShare: () -> Unit,
-    onUpdate: (String) -> Unit,
-    showShareButton: Boolean = true
+    onUpdate: (String) -> Unit
 ) {
     var showMenu by remember { mutableStateOf(false) }
     var showUpdateDialog by remember { mutableStateOf(false) }
@@ -57,9 +59,7 @@ fun FileCard(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        shape = RoundedCornerShape(16.dp)
     ) {
         Row(
             modifier = Modifier
@@ -70,27 +70,20 @@ fun FileCard(
         ) {
             Column {
                 Text(
-                    text = limitFilename,
-                    style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
-                    color = Color.Black
+                    text = limitFilename
                 )
                 Text(
-                    text = "Date: ${fileRecord.timeUpload}",
-                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
+                    text = "Date: ${fileRecord.timeUpload}"
                 )
             }
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                if (showShareButton) {
-                    IconButton(onClick = { onShare() }) {
-                        Icon(
-                            imageVector = Icons.Default.Share,
-                            contentDescription = "Share",
-                            tint = Color(0xFF000080)
-                        )
-                    }
+                IconButton(onClick = { onShare() }) {
+                    Icon(
+                        imageVector = Icons.Default.Share,
+                        contentDescription = "Share",
+                    )
                 }
 
                 Box {
@@ -98,7 +91,6 @@ fun FileCard(
                         Icon(
                             imageVector = Icons.Default.MoreVert,
                             contentDescription = "Menu",
-                            tint = Color(0xFF000080)
                         )
                     }
 
@@ -158,12 +150,12 @@ fun FileCard(
                         showUpdateDialog = false
                     }
                 ) {
-                    Text("Update")
+                    Text(stringResource(R.string.update))
                 }
             },
             dismissButton = {
                 Button(onClick = { showUpdateDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
