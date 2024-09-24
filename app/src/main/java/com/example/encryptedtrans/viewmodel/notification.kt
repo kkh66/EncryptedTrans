@@ -58,7 +58,7 @@ class notification(private val context: Context) {
         progress: Int = -1
     ) {
         val builder = NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(R.drawable.logo_use) // 图标
+            .setSmallIcon(R.drawable.logo_use)
             .setContentTitle(title)
             .setContentText(content)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)

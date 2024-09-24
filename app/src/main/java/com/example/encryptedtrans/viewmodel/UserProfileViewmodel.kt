@@ -17,7 +17,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.io.File
 
-class UserProfileViewModel(private val auth: Auth, private val context: Context) : ViewModel() {
+class UserProfileViewModel(private val auth: Auth, context: Context) : ViewModel() {
     var username by mutableStateOf("")
         private set
     var email by mutableStateOf("")
@@ -102,10 +102,8 @@ class UserProfileViewModel(private val auth: Auth, private val context: Context)
                 val userId =
                     auth.getCurrentUser()?.uid ?: throw IllegalStateException("User not logged in")
 
-                // Delete from database
                 userProfileDao.deleteProfilePicture(userId)
 
-                // Delete file from storage
                 profileImagePath?.let { path ->
                     val file = File(path)
                     if (file.exists()) {
@@ -113,7 +111,6 @@ class UserProfileViewModel(private val auth: Auth, private val context: Context)
                     }
                 }
 
-                // Reset state
                 profileImagePath = null
                 _currentProfileImageUri.value = null
 
@@ -138,10 +135,10 @@ class UserProfileViewModel(private val auth: Auth, private val context: Context)
         password = newPassword
     }
 
-    fun saveProfileImage(uri: Uri) {
+    fun saveProfileImage(uri: Uri, context: Context) {
         viewModelScope.launch {
             _isProfileImageLoading.value = true
-            _currentProfileImageUri.value = uri  // Update UI immediately
+            _currentProfileImageUri.value = uri
             try {
                 val userId =
                     auth.getCurrentUser()?.uid ?: throw IllegalStateException("User not logged in")
@@ -210,19 +207,17 @@ class UserProfileViewModel(private val auth: Auth, private val context: Context)
             profileState = profileState.copy(isLoading = true, errorMessage = null)
 
             try {
-                val result = auth.updateUserEmail(newEmail, email, password)
-                when (result) {
+                profileState = when (val result = auth.updateUserEmail(newEmail, email, password)) {
                     is Auth.AuthResult.Success -> {
-                        profileState = profileState.copy(isEmailChangeSent = true)
+                        profileState.copy(isEmailChangeSent = true)
                     }
 
                     is Auth.AuthResult.Error -> {
-                        profileState = profileState.copy(errorMessage = result.message)
+                        profileState.copy(errorMessage = result.message)
                     }
 
                     else -> {
-                        profileState =
-                            profileState.copy(errorMessage = "Unexpected response. Please try again.")
+                        profileState.copy(errorMessage = "Unexpected response. Please try again.")
                     }
                 }
             } catch (e: Exception) {
@@ -276,14 +271,5 @@ class UserProfileViewModel(private val auth: Auth, private val context: Context)
 
     fun logout() {
         auth.logoutUser()
-        clearInputs()
-        profileState = UserProfileState()
-    }
-
-    private fun clearInputs() {
-        username = ""
-        email = ""
-        newEmail = ""
-        password = ""
     }
 }

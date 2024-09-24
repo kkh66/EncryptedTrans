@@ -1,9 +1,6 @@
 package com.example.encryptedtrans.ui
 
 import android.app.DatePickerDialog
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
 import android.graphics.Bitmap
 import android.widget.Toast
 import androidx.compose.animation.core.LinearEasing
@@ -12,9 +9,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -32,6 +27,7 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
@@ -48,13 +44,11 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SearchBar
-import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -68,9 +62,9 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.encryptedtrans.viewmodel.FileViewModel
@@ -86,7 +80,6 @@ import io.github.vinceglb.filekit.core.PickerMode
 import io.github.vinceglb.filekit.core.PickerType
 import io.github.vinceglb.filekit.core.PlatformDirectory
 import io.github.vinceglb.filekit.core.PlatformFile
-import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -237,10 +230,7 @@ fun FileUi(
                             }
                         }
                     }
-
-
                 }
-
             }
         }
         Box(
@@ -269,13 +259,12 @@ fun FileUi(
 
                 when {
                     fileState.isLoading -> {
-                        // Display the progress indicator as a snackbar
+
                         Box(modifier = Modifier.fillMaxSize()) {
                             SnackbarHost(
                                 hostState = snackbarHostState,
                                 modifier = Modifier.align(Alignment.Center)
                             ) {
-                                // Custom snackbar with loading progress
                                 Card(
                                     modifier = Modifier.size(96.dp),
                                     shape = RoundedCornerShape(8.dp),
@@ -285,14 +274,13 @@ fun FileUi(
                                     ),
                                     elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
                                 ) {
-                                    // Infinite animation for the progress indicator
                                     val progress by rememberInfiniteTransition().animateFloat(
                                         initialValue = 0f,
                                         targetValue = 1f,
                                         animationSpec = infiniteRepeatable(
                                             animation = tween(1000, easing = LinearEasing),
                                             repeatMode = RepeatMode.Restart
-                                        )
+                                        ), label = ""
                                     )
 
                                     Box(
@@ -306,7 +294,7 @@ fun FileUi(
                                             color = Color.Yellow,
                                             modifier = Modifier
                                                 .size(50.dp)
-                                                .rotate(360 * progress) // Rotate based on progress
+                                                .rotate(360 * progress)
                                         )
                                     }
                                 }
@@ -381,7 +369,7 @@ fun FileUi(
 
     if (showShareDialog) {
         val lengthFilename = selectedFileForSharing?.filename?.let {
-            if (it.length > 5) it.take(5) + "..." else it
+            if (it.length > 8) it.take(8) + "..." else it
         }
         AlertDialog(
             onDismissRequest = { showShareDialog = false },
@@ -390,7 +378,8 @@ fun FileUi(
                 Column {
                     Row(
                         Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text("Custom PIN Encrypt")
                         Switch(
@@ -401,15 +390,23 @@ fun FileUi(
                     if (useCustomPin) {
                         OutlinedTextField(
                             value = customPin,
-                            onValueChange = { customPin = it },
+                            onValueChange = {
+                                if (it.length <= 6 && it.all { char -> char.isDigit() }) {
+                                    customPin = it
+                                }
+                            },
+                            isError = customPin.length < 6,
                             label = { Text("Enter PIN") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
 
+
                     Row(
                         Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text("Time-Limited Sharing")
                         Switch(
@@ -456,9 +453,10 @@ fun FileUi(
 
                     Row(
                         Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Generate QR Code")
+                        Text(stringResource(R.string.generate_qr))
                         Switch(
                             checked = generateQRCode,
                             onCheckedChange = { generateQRCode = it }
@@ -468,10 +466,15 @@ fun FileUi(
             },
             confirmButton = {
                 Button(onClick = {
-                    showShareDialog = false
-                    showUserSelectionDialog = true
+                    if (customPin.length == 6) {
+                        showShareDialog = false
+                        showUserSelectionDialog = true
+                    } else {
+                        Toast.makeText(context, "PIN must be exactly 6 digits", Toast.LENGTH_SHORT)
+                            .show()
+                    }
                 }, modifier = Modifier.fillMaxWidth()) {
-                    Text("Share Now")
+                    Text(stringResource(R.string.share_now))
                 }
             }
         )
@@ -489,7 +492,6 @@ fun FileUi(
                     expirationDate
                 )
                 showUserSelectionDialog = false
-                // Optionally show a confirmation dialog or message
                 shareUrl = selectedFileForSharing?.downloadUrl ?: ""
                 showShareUrlDialog = true
             }
@@ -535,7 +537,7 @@ fun FileUi(
                     onClick = { generateQRCode = false },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Close")
+                    Text(stringResource(R.string.close))
                 }
             }
         )
@@ -543,32 +545,39 @@ fun FileUi(
 
     if (showShareUrlDialog) {
         AlertDialog(
-            onDismissRequest = { showShareUrlDialog = false },
-            title = { Text("File Shared Successfully") },
+            onDismissRequest = {
+                showShareUrlDialog = false
+                useCustomPin = false
+                customPin = ""
+                expirationDate = null
+                generateQRCode = false
+                selectedFileForSharing = null
+            },
+            title = {
+                Text(
+                    "File Share Success", modifier = Modifier
+                        .fillMaxWidth()
+                )
+            },
             text = {
                 Column {
-                    Text("Your file has been shared. Use the following URL to access the file:")
+                    Text("Your file has been shared.")
                     Spacer(modifier = Modifier.height(8.dp))
                 }
             },
             confirmButton = {
                 Button(
                     onClick = {
-                        val clipboardManager =
-                            context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        val clipData = ClipData.newPlainText("Shared File URL", shareUrl)
-                        clipboardManager.setPrimaryClip(clipData)
-                        Toast.makeText(context, "URL copied to clipboard", Toast.LENGTH_SHORT)
-                            .show()
                         showShareUrlDialog = false
-                    }
+                        useCustomPin = false
+                        customPin = ""
+                        expirationDate = null
+                        generateQRCode = false
+                        selectedFileForSharing = null
+                    },
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Copy URL")
-                }
-            },
-            dismissButton = {
-                Button(onClick = { showShareUrlDialog = false }) {
-                    Text("Close")
+                    Text(stringResource(id = R.string.close))
                 }
             }
         )
@@ -596,6 +605,7 @@ fun UserSelectionDialog(
 ) {
     val usersList by viewModel.usersList.collectAsState()
     var selectedUserIds by remember { mutableStateOf<List<String>>(emptyList()) }
+    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
         viewModel.getUsers()
@@ -629,9 +639,13 @@ fun UserSelectionDialog(
         },
         confirmButton = {
             Button(onClick = {
-                onConfirm(selectedUserIds)
+                if (selectedUserIds.isEmpty()) {
+                    Toast.makeText(context, "Please select at least one user to share.", Toast.LENGTH_SHORT).show()
+                } else {
+                    onConfirm(selectedUserIds)
+                }
             }) {
-                Text("Share")
+                Text(stringResource(R.string.share))
             }
         },
         dismissButton = {

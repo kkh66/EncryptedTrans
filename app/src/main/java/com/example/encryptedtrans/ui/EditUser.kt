@@ -87,7 +87,7 @@ fun EditUserUi(
         type = PickerType.Image,
         title = "Select Profile Picture",
         onResult = { file ->
-            file?.let { viewModel.saveProfileImage(it.uri) }
+            file?.let { viewModel.saveProfileImage(it.uri, context) }
         },
         platformSettings = platformSettings
     )

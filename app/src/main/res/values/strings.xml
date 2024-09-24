@@ -32,7 +32,11 @@
     <string name="change_password">Change Password?</string>
     <string name="dark_theme">Dark Theme</string>
     <string name="edit">Edit</string>
+    <string name="share">Share</string>
+    <string name="share_now">Share Now</string>
+    <string name="generate_qr">Generate QR Code</string>
     <string name="logout">Logout</string>
+    <string name="close">Close</string>
     <!--Button Use end-->
 
     <!--Title Use -->
@@ -64,4 +68,10 @@
     <string name="profile_picture">Profile Picture</string>
     <string name="refresh">Refresh</string>
     <!--icon Use end-->
+
+    <string name="shared_files">Shared Files</string>
+    <string name="no_shared_files">No shared files available</string>
+    <string name="enter_pin">Enter PIN</string>
+    <string name="pin">PIN</string>
+    <string name="confirm">Confirm</string>
 </resources>

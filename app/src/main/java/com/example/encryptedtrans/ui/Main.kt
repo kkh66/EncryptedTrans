@@ -216,7 +216,9 @@ fun MainUi(
                     onFabClick = { fabAction = it })
             }
             composable(EncryptedTransScreen.Home.name) {
-                HomeUi(viewModel = HomeFileViewModel(Auth()), onFabClick = { fabAction = it })
+                HomeUi(
+                    viewModel = HomeFileViewModel(Auth()),
+                    onFabClick = { fabAction = it })
             }
             composable(EncryptedTransScreen.Account.name) {
                 UserUi(
