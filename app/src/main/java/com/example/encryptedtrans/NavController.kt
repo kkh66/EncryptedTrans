@@ -35,7 +35,7 @@ fun NavControl(
 
     NavHost(navController = navController, startDestination = check_login, builder = {
         composable(EncryptedTransScreen.Login.name) {
-            LoginUi(navController, viewModel = viewModel { LoginViewModel(auth) })
+            LoginUi(navController, viewModel = viewModel { LoginViewModel(auth) }, isDarkTheme)
         }
         composable(EncryptedTransScreen.Main.name) {
             MainUi(
@@ -47,7 +47,7 @@ fun NavControl(
         }
         composable(EncryptedTransScreen.Register.name) {
             Register(
-                viewModel = viewModel { RegisterViewModel(auth) }, navController
+                viewModel = viewModel { RegisterViewModel(auth) }, navController, isDarkTheme
             )
         }
     })

@@ -37,6 +37,7 @@ import com.example.encryptedtrans.viewmodel.RegisterViewModel
 fun Register(
     viewModel: RegisterViewModel,
     navController: NavController,
+    isDarkTheme: Boolean
 ) {
     val context = LocalContext.current
     val registerSuccessful = stringResource(R.string.registration_successful)
@@ -51,7 +52,7 @@ fun Register(
         }
     }
 
-    val logoUse = if (isSystemInDarkTheme()) {
+    val logoUse = if (isDarkTheme) {
         R.drawable.logo_use
     } else {
         R.drawable.logo_company_removebg_preview

@@ -48,7 +48,8 @@ import com.google.android.gms.common.api.ApiException
 @Composable
 fun LoginUi(
     navController: NavController,
-    viewModel: LoginViewModel
+    viewModel: LoginViewModel,
+    isDarkTheme: Boolean
 ) {
     val context = LocalContext.current
     var showResetDialog by remember { mutableStateOf(false) }
@@ -58,7 +59,7 @@ fun LoginUi(
     val scrollState = rememberScrollState()
 
     //Base on System Theme change logo
-    val logoUse = if (isSystemInDarkTheme()) {
+    val logoUse = if (isDarkTheme) {
         R.drawable.logo_use
     } else {
         R.drawable.logo_company_removebg_preview
