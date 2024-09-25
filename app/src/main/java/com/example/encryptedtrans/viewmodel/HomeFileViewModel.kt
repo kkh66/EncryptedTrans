@@ -27,7 +27,8 @@ import java.io.File
 import java.util.Date
 
 
-class HomeFileViewModel(private val auth: Auth) : ViewModel() {
+class HomeFileViewModel(private val auth: Auth, context: Context) : ViewModel() {
+    private val notification = notification(context)
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
     private val storage: FirebaseStorage = FirebaseStorage.getInstance()
 
@@ -123,7 +124,84 @@ class HomeFileViewModel(private val auth: Auth) : ViewModel() {
         }
     }
 
-    fun accessFile(
+    fun downloadFile(
+        context: Context,
+        sharedFileWithDetails: SharedFileWithDetails? = null,
+        fileRecord: FileRecord? = null,
+        enteredPin: String? = null
+    ) {
+        viewModelScope.launch {
+            val targetFileRecord = fileRecord ?: sharedFileWithDetails?.fileRecord ?: return@launch
+
+            //check the pin and expiration
+            sharedFileWithDetails?.let { sharedFileWithDetails ->
+                val sharedFile = sharedFileWithDetails.sharedFile
+                val currentTime = Date()
+
+                // Check expiration date
+                if (sharedFile.expirationDate != null && currentTime.after(sharedFile.expirationDate)) {
+                    _homeState.update { it.copy(errorMessage = "This file has expired.") }
+                    return@launch
+                }
+
+                // Check if a PIN is required
+                if (sharedFile.pin != null) {
+                    if (enteredPin == null) {
+                        _pinRequired.update { sharedFileWithDetails }
+                        return@launch
+                    }
+                    if (sharedFile.pin != enteredPin) {
+                        _homeState.update { it.copy(errorMessage = "Incorrect PIN.") }
+                        return@launch
+                    }
+                }
+            }
+
+            // Proceed with downloading the file
+            notification.showDownloadNotification("Downloading", "Starting download...", 0)
+
+            try {
+                val storageRef =
+                    storage.reference.child("files/${targetFileRecord.userId}/${targetFileRecord.filename}")
+                val localFile = File(context.getExternalFilesDir(null), targetFileRecord.filename)
+
+                storageRef.getFile(localFile)
+                    .addOnProgressListener { taskSnapshot ->
+                        val progress =
+                            (100.0 * taskSnapshot.bytesTransferred / taskSnapshot.totalByteCount).toInt()
+                        notification.showDownloadNotification(
+                            "Downloading",
+                            "${targetFileRecord.filename} - $progress%",
+                            progress
+                        )
+                    }
+                    .addOnSuccessListener {
+                        _homeState.update { it.copy(successMessage = "File downloaded successfully") }
+                        notification.showDownloadNotification(
+                            "Download Complete",
+                            "File downloaded successfully"
+                        )
+                    }
+                    .addOnFailureListener { exception ->
+                        _homeState.update { it.copy(errorMessage = "Failed to download file: ${exception.message}") }
+                        notification.showDownloadNotification(
+                            "Download Failed",
+                            "Failed to download file"
+                        )
+                    }
+                    .await()
+            } catch (e: Exception) {
+                _homeState.update { it.copy(errorMessage = "Error downloading file") }
+                notification.showDownloadNotification(
+                    "Download Failed",
+                    "Error downloading file"
+                )
+
+            }
+        }
+    }
+
+    fun openFile(
         context: Context,
         sharedFileWithDetails: SharedFileWithDetails,
         enteredPin: String? = null
@@ -132,35 +210,41 @@ class HomeFileViewModel(private val auth: Auth) : ViewModel() {
             val sharedFile = sharedFileWithDetails.sharedFile
             val currentTime = Date()
 
+            // Check expiration date
             if (sharedFile.expirationDate != null && currentTime.after(sharedFile.expirationDate)) {
                 _homeState.update { it.copy(errorMessage = "This file has expired.") }
                 return@launch
             }
 
+            // Check if a PIN is required
             if (sharedFile.pin != null) {
                 if (enteredPin == null) {
-                    _pinRequired.value = sharedFileWithDetails
+                    _pinRequired.update { sharedFileWithDetails }
                     return@launch
                 }
+
                 if (sharedFile.pin != enteredPin) {
                     _homeState.update { it.copy(errorMessage = "Incorrect PIN.") }
                     return@launch
                 }
             }
 
-            downloadFile(context, sharedFileWithDetails.fileRecord!!)
+            downloadAndOpenFile(context, sharedFileWithDetails.fileRecord!!)
         }
     }
 
-    fun openFile(context: Context, fileRecord: FileRecord) {
+    private fun downloadAndOpenFile(context: Context, fileRecord: FileRecord) {
         viewModelScope.launch {
             _homeState.update { it.copy(isLoading = true, errorMessage = null) }
             try {
                 val localFile = File(context.getExternalFilesDir(null), fileRecord.filename)
+
+                // If file doesn't exist locally, download it first
                 if (!localFile.exists()) {
-                    // File doesn't exist locally, download it first
-                    downloadFile(context, fileRecord)
+                    downloadFile(context, fileRecord = fileRecord)
                 }
+
+                // Open the file once it's downloaded
                 openFileWithIntent(context, localFile)
                 _homeState.update { it.copy(isLoading = false) }
             } catch (e: Exception) {
@@ -192,34 +276,11 @@ class HomeFileViewModel(private val auth: Auth) : ViewModel() {
         return MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
     }
 
-    fun clearPinRequired() {
-        _pinRequired.value = null
-    }
-
-    private fun downloadFile(
-        context: Context,
-        fileRecord: FileRecord
-    ) {
-        viewModelScope.launch {
-            try {
-                val storageRef =
-                    storage.reference.child("files/${fileRecord.userId}/${fileRecord.filename}")
-                val localFile = File(context.getExternalFilesDir(null), fileRecord.filename)
-
-                storageRef.getFile(localFile).addOnSuccessListener {
-                    _homeState.update { it.copy(successMessage = "File downloaded successfully") }
-                }.addOnFailureListener { exception ->
-                    _homeState.update { it.copy(errorMessage = "Failed to download file: ${exception.message}") }
-                }.await()
-            } catch (e: Exception) {
-                _homeState.update { it.copy(errorMessage = "Error downloading file: ${e.message}") }
-            }
-        }
-    }
-
     fun deleteFile(sharedFileWithDetails: SharedFileWithDetails) {
         viewModelScope.launch {
             _homeState.update { it.copy(isLoading = true, errorMessage = null) }
+            notification.showScanNotification("Deleting File", "Deleting the File")
+
             try {
                 firestore.collection("shared_files")
                     .document(sharedFileWithDetails.sharedFile.id)
@@ -233,6 +294,7 @@ class HomeFileViewModel(private val auth: Auth) : ViewModel() {
                         successMessage = "Shared file removed successfully."
                     )
                 }
+                notification.showScanNotification("File Deleted", "File Deleted successfully.")
             } catch (e: Exception) {
                 _homeState.update {
                     it.copy(
@@ -240,6 +302,10 @@ class HomeFileViewModel(private val auth: Auth) : ViewModel() {
                         errorMessage = "Failed to delete shared file: ${e.message}"
                     )
                 }
+                notification.showScanNotification(
+                    "Deletion Failed",
+                    "Failed to delete shared file: ${e.message}"
+                )
             }
         }
     }

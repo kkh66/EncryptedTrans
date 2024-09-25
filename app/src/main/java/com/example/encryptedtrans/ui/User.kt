@@ -23,6 +23,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
@@ -48,6 +50,7 @@ fun UserUi(
     mainNavController: NavController
 ) {
     val context = LocalContext.current
+    val profileState by viewModel.profileState.collectAsState()
 
     val profileImage by produceState<ImageRequest?>(null) {
         value = viewModel.profileImagePath?.let { path ->
@@ -130,23 +133,25 @@ fun UserUi(
             }
             Spacer(modifier = Modifier.weight(1f))
 
-            Button(
-                onClick = {
-                    viewModel.logout()
-                    Toast.makeText(context, "Logout Successful", Toast.LENGTH_SHORT).show()
+            if (profileState.isLoggedOut) {
+                LaunchedEffect(Unit) {
                     navController.navigate(EncryptedTransScreen.Login.name) {
-                        popUpTo(navController.graph.startDestinationId) {
-                            inclusive = true
-                        }
+                        popUpTo(navController.graph.startDestinationId) { inclusive = true }
                         launchSingleTop = true
                     }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-                    .height(50.dp),
-            ) {
-                Text(stringResource(R.string.logout), fontSize = 18.sp)
+                }
+            } else {
+                Button(
+                    onClick = {
+                        viewModel.logout() // Trigger logout
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                        .height(50.dp),
+                ) {
+                    Text(stringResource(R.string.logout), fontSize = 18.sp)
+                }
             }
         }
     }

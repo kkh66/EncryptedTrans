@@ -6,5 +6,6 @@ data class UserProfileState(
     val isEmailChangeSent: Boolean = false,
     val isEmailVerificationInProgress: Boolean = false,
     val isEmailVerified: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val isLoggedOut: Boolean = false
 )

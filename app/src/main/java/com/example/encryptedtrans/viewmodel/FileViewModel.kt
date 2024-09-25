@@ -101,22 +101,24 @@ class FileViewModel(private val auth: Auth, context: Context) : ViewModel() {
     fun getUsers() {
         viewModelScope.launch {
             try {
+                val currentUserId = auth.getCurrentUser()?.uid
+                    ?: throw IllegalStateException("No user logged in")
+
                 val result = firestore.collection("users").get().await()
                 val users = result.documents.mapNotNull { doc ->
                     val id = doc.id
                     val name = doc.getString("username")
                     val email = doc.getString("email")
-                    if (name != null && email != null) {
+                    if (id != currentUserId && name != null && email != null) {
                         User(id = id, name = name, email = email)
                     } else null
                 }
                 _usersList.value = users
             } catch (e: Exception) {
-                setErrorMessage("Failed to get users")
+                setErrorMessage("Failed to get users: ${e.message}")
             }
         }
     }
-
 
     /**
      * Share the file function use

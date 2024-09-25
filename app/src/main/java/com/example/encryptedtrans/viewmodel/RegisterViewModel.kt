@@ -44,7 +44,7 @@ class RegisterViewModel(private val auth: Auth) : ViewModel() {
 
     /**
      * Register function,first validate using the Util and then use the auth register function
-     **/
+     */
     fun register() {
         viewModelScope.launch {
             registerState = registerState.copy(isLoading = true, errorMessage = null)

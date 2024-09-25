@@ -48,7 +48,13 @@ class Auth {
     suspend fun loginUser(email: String, password: String): AuthResult {
         return try {
             val result = auth.signInWithEmailAndPassword(email, password).await()
-            AuthResult.Success(result.user ?: throw Exception("User is null"))
+
+            val user = result.user ?: throw Exception("User is null")
+
+            val userDocRef = db.collection("users").document(user.uid)
+            userDocRef.update("email", user.email).await()
+
+            AuthResult.Success(user)
         } catch (e: Exception) {
             AuthResult.Error(e.message ?: "An unknown error occurred")
         }
@@ -123,21 +129,33 @@ class Auth {
         return try {
             val user = auth.currentUser ?: throw Exception("User is not logged in")
 
+            if (newEmail == user.email) {
+                return AuthResult.Error("The new email is the same as the current email.")
+            }
+
 
             val credential = EmailAuthProvider.getCredential(email, password)
             user.reauthenticate(credential).await()
+
+            val existingUser = db.collection("users")
+                .whereEqualTo("email", newEmail)
+                .get()
+                .await()
+
+            if (!existingUser.isEmpty) {
+                return AuthResult.Error("This email is already in use by another account.")
+            }
 
             user.verifyBeforeUpdateEmail(newEmail)
 
 
             AuthResult.Success(user)
         } catch (e: Exception) {
-            if (e is FirebaseAuthInvalidCredentialsException) {
-                return AuthResult.Error("Please check your email and password")
-            } else if (e is FirebaseAuthUserCollisionException) {
-                return AuthResult.Error("This email is already in use by another account")
+            return when (e) {
+                is FirebaseAuthInvalidCredentialsException -> AuthResult.Error("Invalid email or password.")
+                is FirebaseAuthUserCollisionException -> AuthResult.Error("This email is already in use by another account.")
+                else -> AuthResult.Error("An unknown error occurred: ${e.message}")
             }
-            return AuthResult.Error("An unknown error occurred: ${e.message}")
         }
     }
 

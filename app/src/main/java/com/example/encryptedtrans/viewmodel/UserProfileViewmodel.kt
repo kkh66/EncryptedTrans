@@ -14,6 +14,7 @@ import com.example.encryptedtrans.utils.Utils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -34,8 +35,8 @@ class UserProfileViewModel(private val auth: Auth, context: Context) : ViewModel
     var confirmNewPassword by mutableStateOf("")
         private set
 
-    var profileState by mutableStateOf(UserProfileState())
-        private set
+    private val _profileState = MutableStateFlow(UserProfileState())
+    val profileState: StateFlow<UserProfileState> = _profileState.asStateFlow()
 
     var profileImagePath by mutableStateOf<String?>(null)
         private set
@@ -68,7 +69,7 @@ class UserProfileViewModel(private val auth: Auth, context: Context) : ViewModel
     }
 
     fun resetUpdateSuccessState() {
-        profileState = profileState.copy(isUpdateSuccessful = false)
+        _profileState.update { it.copy(isUpdateSuccessful = false) }
     }
 
     private fun loadUserProfile() {
@@ -87,8 +88,7 @@ class UserProfileViewModel(private val auth: Auth, context: Context) : ViewModel
                 profileImagePath = userProfile?.profileImagePath
                 _currentProfileImageUri.value = profileImagePath?.let { Uri.parse(it) }
             } catch (e: Exception) {
-                profileState =
-                    profileState.copy(errorMessage = "Failed to load profile image: ${e.message}")
+                _profileState.update { it.copy(errorMessage = "Failed to load profile image: ${e.message}") }
             } finally {
                 _isProfileImageLoading.value = false
             }
@@ -115,8 +115,7 @@ class UserProfileViewModel(private val auth: Auth, context: Context) : ViewModel
                 _currentProfileImageUri.value = null
 
             } catch (e: Exception) {
-                profileState =
-                    profileState.copy(errorMessage = "Failed to delete profile image: ${e.message}")
+                _profileState.update { it.copy(errorMessage = "Failed to delete profile image: ${e.message}") }
             } finally {
                 _isProfileImageLoading.value = false
             }
@@ -155,8 +154,7 @@ class UserProfileViewModel(private val auth: Auth, context: Context) : ViewModel
                 profileImagePath = file.absolutePath
                 _currentProfileImageUri.value = Uri.fromFile(file)
             } catch (e: Exception) {
-                profileState =
-                    profileState.copy(errorMessage = "Failed to save profile image: ${e.message}")
+                _profileState.update { it.copy(errorMessage = "Failed to save profile image: ${e.message}") }
                 _currentProfileImageUri.value = null
             } finally {
                 _isProfileImageLoading.value = false
@@ -166,27 +164,46 @@ class UserProfileViewModel(private val auth: Auth, context: Context) : ViewModel
 
     fun saveChanges() {
         viewModelScope.launch {
-            profileState = profileState.copy(isLoading = true, errorMessage = null)
+            _profileState.update { it.copy(isLoading = true, errorMessage = null) }
 
             try {
                 if (!utils.validateUsername(username)) {
-                    profileState =
-                        profileState.copy(errorMessage = "Invalid Username", isLoading = false)
+                    _profileState.update {
+                        it.copy(
+                            errorMessage = "Invalid Username",
+                            isLoading = false
+                        )
+                    }
                     return@launch
                 }
 
-                val usernameResult = auth.updateUserProfile(username)
-                if (usernameResult is Auth.AuthResult.Error) {
-                    profileState =
-                        profileState.copy(errorMessage = usernameResult.message, isLoading = false)
-                    return@launch
-                }
+                when (val usernameResult = auth.updateUserProfile(username)) {
+                    is Auth.AuthResult.Success -> {
+                        _profileState.update { it.copy(isUpdateSuccessful = true) }
+                    }
 
-                profileState = profileState.copy(isUpdateSuccessful = true)
+                    is Auth.AuthResult.Error -> {
+                        _profileState.update {
+                            it.copy(
+                                errorMessage = usernameResult.message,
+                                isLoading = false
+                            )
+                        }
+                    }
+
+                    else -> {
+                        _profileState.update {
+                            it.copy(
+                                errorMessage = "Unexpected response during update",
+                                isLoading = false
+                            )
+                        }
+                    }
+                }
             } catch (e: Exception) {
-                profileState = profileState.copy(errorMessage = "Update failed: ${e.message}")
+                _profileState.update { it.copy(errorMessage = "Update failed: ${e.message}") }
             } finally {
-                profileState = profileState.copy(isLoading = false)
+                _profileState.update { it.copy(isLoading = false) }
             }
         }
     }
@@ -194,37 +211,30 @@ class UserProfileViewModel(private val auth: Auth, context: Context) : ViewModel
     fun sendEmailChangeRequest() {
         viewModelScope.launch {
             if (!utils.validateEmail(newEmail)) {
-                profileState = profileState.copy(errorMessage = "Invalid email format")
+                _profileState.update { it.copy(errorMessage = "Invalid email format") }
                 return@launch
             }
 
             if (password.isEmpty()) {
-                profileState =
-                    profileState.copy(errorMessage = "Password is required for email change")
+                _profileState.update { it.copy(errorMessage = "Password is required for email change") }
                 return@launch
             }
 
-            profileState = profileState.copy(isLoading = true, errorMessage = null)
+            _profileState.update { it.copy(isLoading = true, errorMessage = null) }
 
             try {
-                profileState = when (val result = auth.updateUserEmail(newEmail, email, password)) {
-                    is Auth.AuthResult.Success -> {
-                        profileState.copy(isEmailChangeSent = true)
-                    }
-
-                    is Auth.AuthResult.Error -> {
-                        profileState.copy(errorMessage = result.message)
-                    }
-
-                    else -> {
-                        profileState.copy(errorMessage = "Unexpected response. Please try again.")
+                val result = auth.updateUserEmail(newEmail, email, password)
+                _profileState.update {
+                    when (result) {
+                        is Auth.AuthResult.Success -> it.copy(isEmailChangeSent = true)
+                        is Auth.AuthResult.Error -> it.copy(errorMessage = result.message)
+                        else -> it.copy(errorMessage = "Unexpected response. Please try again.")
                     }
                 }
             } catch (e: Exception) {
-                profileState =
-                    profileState.copy(errorMessage = "Failed to send email change request: ${e.message}")
+                _profileState.update { it.copy(errorMessage = "Failed to send email change request: ${e.message}") }
             } finally {
-                profileState = profileState.copy(isLoading = false)
+                _profileState.update { it.copy(isLoading = false) }
                 newEmail = ""
                 password = ""
             }
@@ -233,32 +243,39 @@ class UserProfileViewModel(private val auth: Auth, context: Context) : ViewModel
 
     fun changePassword() {
         viewModelScope.launch {
-            profileState = profileState.copy(isLoading = true, errorMessage = null)
-            try {
-                if (newPassword != confirmNewPassword) {
-                    profileState = profileState.copy(errorMessage = "New passwords do not match")
-                    return@launch
+            _profileState.update { it.copy(isLoading = true, errorMessage = null) }
+
+            if (!utils.validatePassword(newPassword)) {
+                _profileState.update {
+                    it.copy(errorMessage = "Password must contain at least 8 characters, including an uppercase letter, a lowercase letter, and a number.")
                 }
+                return@launch
+            }
+
+            if (!utils.passwordsMatch(newPassword, confirmNewPassword)) {
+                _profileState.update { it.copy(errorMessage = "Passwords do not match.") }
+                return@launch
+            }
+
+            try {
                 when (val result = auth.changePassword(currentPassword, newPassword)) {
                     is Auth.AuthResult.Success -> {
-                        profileState = profileState.copy(isUpdateSuccessful = true)
+                        _profileState.update { it.copy(isUpdateSuccessful = true) }
                         clearPasswordFields()
                     }
 
                     is Auth.AuthResult.Error -> {
-                        profileState = profileState.copy(errorMessage = result.message)
+                        _profileState.update { it.copy(errorMessage = result.message) }
                     }
 
                     is Auth.AuthResult.PasswordResetSuccess -> {
-                        profileState =
-                            profileState.copy(errorMessage = "Unexpected result: Password reset success")
+                        _profileState.update { it.copy(errorMessage = "Unexpected result: Password reset success") }
                     }
                 }
             } catch (e: Exception) {
-                profileState =
-                    profileState.copy(errorMessage = "Failed to change password: ${e.message}")
+                _profileState.update { it.copy(errorMessage = "Failed to change password: ${e.message}") }
             } finally {
-                profileState = profileState.copy(isLoading = false)
+                _profileState.update { it.copy(isLoading = false) }
             }
         }
     }
@@ -270,6 +287,9 @@ class UserProfileViewModel(private val auth: Auth, context: Context) : ViewModel
     }
 
     fun logout() {
-        auth.logoutUser()
+        viewModelScope.launch {
+            auth.logoutUser()
+            _profileState.update { it.copy(isLoggedOut = true) }
+        }
     }
 }

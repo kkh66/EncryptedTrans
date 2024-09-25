@@ -4,9 +4,7 @@ import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -36,7 +34,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -71,14 +68,14 @@ fun EditUserUi(
 
     val currentProfileImageUri by viewModel.currentProfileImageUri.collectAsState()
     val isProfileImageLoading by viewModel.isProfileImageLoading.collectAsState()
+    val profileState by viewModel.profileState.collectAsState()
 
     LaunchedEffect(Unit) {
         viewModel.loadProfileImage()
     }
 
-
-    LaunchedEffect(viewModel.profileState.errorMessage) {
-        viewModel.profileState.errorMessage?.let {
+    LaunchedEffect(profileState.errorMessage) {
+        profileState.errorMessage?.let {
             Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
         }
     }
@@ -92,16 +89,16 @@ fun EditUserUi(
         platformSettings = platformSettings
     )
 
-    LaunchedEffect(viewModel.profileState.isUpdateSuccessful) {
-        if (viewModel.profileState.isUpdateSuccessful) {
+    LaunchedEffect(profileState.isUpdateSuccessful) {
+        if (profileState.isUpdateSuccessful) {
             Toast.makeText(context, "Profile updated successfully", Toast.LENGTH_SHORT).show()
             viewModel.resetUpdateSuccessState()
             navController.popBackStack()
         }
     }
 
-    LaunchedEffect(viewModel.profileState.isEmailChangeSent) {
-        if (viewModel.profileState.isEmailChangeSent) {
+    LaunchedEffect(profileState.isEmailChangeSent) {
+        if (profileState.isEmailChangeSent) {
             Toast.makeText(
                 context,
                 "A email have sent to you please check.Please Login Again",
@@ -328,7 +325,7 @@ fun EditUserUi(
                         .fillMaxWidth()
                         .padding(top = 10.dp, bottom = 0.dp)
                 ) {
-                    if (viewModel.profileState.isLoading) {
+                    if (profileState.isLoading) {
                         CircularProgressIndicator(
                             modifier = Modifier
                                 .align(Alignment.Center)

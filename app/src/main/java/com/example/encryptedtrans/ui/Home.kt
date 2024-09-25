@@ -22,12 +22,9 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -36,7 +33,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -57,7 +53,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.sp
 import com.example.encryptedtrans.R
 import com.example.encryptedtrans.viewmodel.HomeFileViewModel
@@ -75,10 +70,8 @@ fun HomeUi(viewModel: HomeFileViewModel, onFabClick: (() -> Unit) -> Unit) {
 
     var isSearchActive by remember { mutableStateOf(false) }
     var showPinDialog by remember { mutableStateOf(false) }
-    var enteredPin by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
-        viewModel.getSharedFiles()
         onFabClick {
             viewModel.getSharedFiles()
         }
@@ -89,6 +82,7 @@ fun HomeUi(viewModel: HomeFileViewModel, onFabClick: (() -> Unit) -> Unit) {
             showPinDialog = true
         }
     }
+
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier.padding(0.dp),
@@ -129,12 +123,11 @@ fun HomeUi(viewModel: HomeFileViewModel, onFabClick: (() -> Unit) -> Unit) {
                     }
                 }
             ) {
-                if (filteredSharedFiles.isEmpty()) {
+                if (searchQuery.isEmpty() || filteredSharedFiles.isEmpty()) {
                     Text(
                         text = stringResource(id = R.string.search_empty),
                         modifier = Modifier.padding(16.dp)
                     )
-
                 } else {
                     Box {
                         Column(
@@ -149,18 +142,25 @@ fun HomeUi(viewModel: HomeFileViewModel, onFabClick: (() -> Unit) -> Unit) {
                                 items(filteredSharedFiles) { sharedFileWithDetails ->
                                     HomeCard(
                                         sharedFileWithDetails = sharedFileWithDetails,
-                                        onAccess = {
-                                            viewModel.accessFile(
-                                                context,
-                                                sharedFileWithDetails
+                                        onDownload = { fileDetails, pin ->
+                                            // Ensure that both parameters are passed to downloadFile
+                                            viewModel.downloadFile(
+                                                context = context,
+                                                sharedFileWithDetails = fileDetails,
+                                                enteredPin = pin
                                             )
                                         },
-                                        onOpen = {
-                                            sharedFileWithDetails.fileRecord?.let { fileRecord ->
-                                                viewModel.openFile(context, fileRecord)
-                                            }
+                                        onOpen = { fileDetails, pin ->
+                                            // Ensure both parameters are passed to openFile
+                                            viewModel.openFile(
+                                                context = context,
+                                                sharedFileWithDetails = fileDetails,
+                                                enteredPin = pin
+                                            )
                                         },
-                                        onDelete = { viewModel.deleteFile(sharedFileWithDetails) }
+                                        onDelete = {
+                                            viewModel.deleteFile(sharedFileWithDetails)
+                                        }
                                     )
                                 }
                             }
@@ -210,7 +210,10 @@ fun HomeUi(viewModel: HomeFileViewModel, onFabClick: (() -> Unit) -> Unit) {
                                         ),
                                         elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
                                     ) {
-                                        val progress by rememberInfiniteTransition().animateFloat(
+                                        // Updated infinite transition with label for inspection
+                                        val infiniteTransition =
+                                            rememberInfiniteTransition(label = "Loading Animation")
+                                        val progress by infiniteTransition.animateFloat(
                                             initialValue = 0f,
                                             targetValue = 1f,
                                             animationSpec = infiniteRepeatable(
@@ -223,8 +226,9 @@ fun HomeUi(viewModel: HomeFileViewModel, onFabClick: (() -> Unit) -> Unit) {
                                             modifier = Modifier.fillMaxSize(),
                                             contentAlignment = Alignment.Center
                                         ) {
+                                            // Updated CircularProgressIndicator
                                             CircularProgressIndicator(
-                                                progress = progress,
+                                                progress = { progress },  // Pass progress as lambda
                                                 strokeWidth = 4.dp,
                                                 strokeCap = StrokeCap.Round,
                                                 color = Color.Yellow,
@@ -253,18 +257,23 @@ fun HomeUi(viewModel: HomeFileViewModel, onFabClick: (() -> Unit) -> Unit) {
                                     items(homeState.sharedFiles) { sharedFileWithDetails ->
                                         HomeCard(
                                             sharedFileWithDetails = sharedFileWithDetails,
-                                            onAccess = {
-                                                viewModel.accessFile(
-                                                    context,
-                                                    sharedFileWithDetails
+                                            onDownload = { fileDetails, pin ->
+                                                viewModel.downloadFile(
+                                                    context = context,
+                                                    sharedFileWithDetails = fileDetails,
+                                                    enteredPin = pin
                                                 )
                                             },
-                                            onOpen = {
-                                                sharedFileWithDetails.fileRecord?.let { fileRecord ->
-                                                    viewModel.openFile(context, fileRecord)
-                                                }
+                                            onOpen = { fileDetails, pin ->
+                                                viewModel.openFile(
+                                                    context = context,
+                                                    sharedFileWithDetails = fileDetails,
+                                                    enteredPin = pin
+                                                )
                                             },
-                                            onDelete = { viewModel.deleteFile(sharedFileWithDetails) }
+                                            onDelete = {
+                                                viewModel.deleteFile(sharedFileWithDetails)
+                                            }
                                         )
                                     }
                                 }
@@ -274,55 +283,20 @@ fun HomeUi(viewModel: HomeFileViewModel, onFabClick: (() -> Unit) -> Unit) {
                 }
             }
         }
+
+        // Snackbar for success and error messages
         SnackbarHost(
             hostState = snackbarHostState,
             modifier = Modifier.align(Alignment.BottomCenter)
         )
     }
+
+    // Show Snackbar for error or success messages
     LaunchedEffect(homeState.errorMessage, homeState.successMessage) {
         val message = homeState.errorMessage ?: homeState.successMessage
         if (message != null) {
             snackbarHostState.showSnackbar(message, duration = SnackbarDuration.Short)
             viewModel.clearMessages()
         }
-    }
-
-
-    if (showPinDialog && pinRequired != null) {
-        AlertDialog(
-            onDismissRequest = { showPinDialog = false },
-            title = { Text("Enter PIN") },
-            text = {
-                OutlinedTextField(
-                    value = enteredPin,
-                    onValueChange = {
-                        if (it.length <= 6 && it.all { char -> char.isDigit() }) {
-                            enteredPin = it
-                        }
-                    },
-                    label = { Text("PIN") },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                )
-            },
-            confirmButton = {
-                Button(onClick = {
-                    viewModel.accessFile(context, pinRequired!!, enteredPin)
-                    enteredPin = ""
-                    showPinDialog = false
-                    viewModel.clearPinRequired()
-                }) {
-                    Text("Submit")
-                }
-            },
-            dismissButton = {
-                Button(onClick = {
-                    showPinDialog = false
-                    viewModel.clearPinRequired()
-                }) {
-                    Text(stringResource(id = R.string.cancel))
-                }
-            }
-        )
     }
 }

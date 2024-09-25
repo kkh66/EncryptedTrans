@@ -313,6 +313,8 @@ fun FileUi(
                     else -> {
                         LazyColumn(
                             contentPadding = PaddingValues(16.dp),
+                            modifier =
+                            Modifier.padding(bottom = 45.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             items(fileState.filesList) { fileRecord ->
@@ -466,7 +468,7 @@ fun FileUi(
             },
             confirmButton = {
                 Button(onClick = {
-                    if (customPin.length == 6) {
+                    if (customPin.length == 6 && customPin.all { it.isDigit() }) {
                         showShareDialog = false
                         showUserSelectionDialog = true
                     } else {
@@ -597,6 +599,7 @@ fun generateQRCodeBitmap(content: String): Bitmap? {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class) // Necessary for SearchBar API
 @Composable
 fun UserSelectionDialog(
     viewModel: FileViewModel = viewModel(),
@@ -607,6 +610,15 @@ fun UserSelectionDialog(
     var selectedUserIds by remember { mutableStateOf<List<String>>(emptyList()) }
     val context = LocalContext.current
 
+    var searchQuery by remember { mutableStateOf("") }
+    var isSearchActive by remember { mutableStateOf(false) }
+    val userDisplayLimit = 10
+
+    val filteredUsers = usersList.filter {
+        it.name.contains(searchQuery, ignoreCase = true) ||
+                it.email.contains(searchQuery, ignoreCase = true)
+    }.take(userDisplayLimit)
+
     LaunchedEffect(Unit) {
         viewModel.getUsers()
     }
@@ -616,22 +628,50 @@ fun UserSelectionDialog(
         title = { Text("Select Users to Share With") },
         text = {
             Column {
-                LazyColumn {
-                    items(usersList) { user ->
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Checkbox(
-                                checked = selectedUserIds.contains(user.id),
-                                onCheckedChange = { isChecked ->
-                                    selectedUserIds = if (isChecked) {
-                                        selectedUserIds + user.id
-                                    } else {
-                                        selectedUserIds - user.id
+                SearchBar(
+                    query = searchQuery,
+                    onQueryChange = { query -> searchQuery = query },
+                    onSearch = { isSearchActive = false },
+                    active = isSearchActive,
+                    onActiveChange = { isSearchActive = it },
+                    placeholder = { Text("Search by name or email") },
+                    leadingIcon = {
+                        Icon(Icons.Default.Search, contentDescription = "Search Icon")
+                    },
+                    trailingIcon = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = {
+                                searchQuery = ""
+                                isSearchActive = false
+                            }) {
+                                Icon(Icons.Default.Clear, contentDescription = "Clear Search")
+                            }
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp)
+                ) {
+                    LazyColumn {
+                        items(filteredUsers) { user ->
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp)
+                            ) {
+                                Checkbox(
+                                    checked = selectedUserIds.contains(user.id),
+                                    onCheckedChange = { isChecked ->
+                                        selectedUserIds = if (isChecked) {
+                                            selectedUserIds + user.id
+                                        } else {
+                                            selectedUserIds - user.id
+                                        }
                                     }
-                                }
-                            )
-                            Text(text = "${user.name} (${user.email})")
+                                )
+                                Text(text = "${user.name} (${user.email})")
+                            }
                         }
                     }
                 }
@@ -640,12 +680,16 @@ fun UserSelectionDialog(
         confirmButton = {
             Button(onClick = {
                 if (selectedUserIds.isEmpty()) {
-                    Toast.makeText(context, "Please select at least one user to share.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        context,
+                        "Please select at least one user to share.",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 } else {
                     onConfirm(selectedUserIds)
                 }
             }) {
-                Text(stringResource(R.string.share))
+                Text("Share")
             }
         },
         dismissButton = {
