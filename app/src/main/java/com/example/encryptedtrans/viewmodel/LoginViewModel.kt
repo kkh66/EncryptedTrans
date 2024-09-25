@@ -122,7 +122,7 @@ class LoginViewModel(private val auth: Auth) : ViewModel() {
                     loginState.copy(errorMessage = "Failed to send reset email: ${e.message}")
             } finally {
                 loginState = loginState.copy(isLoading = false)
-                resetEmail = "" // Clear the reset email after attempt
+                resetEmail = ""
             }
         }
     }

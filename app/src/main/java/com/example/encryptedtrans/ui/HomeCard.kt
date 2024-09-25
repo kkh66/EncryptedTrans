@@ -96,7 +96,7 @@ fun HomeCard(
                             onClick = {
                                 showPinDialog = true
                                 pinAction = { pin ->
-                                    onDownload(sharedFileWithDetails, pin) // Pass SharedFileWithDetails and PIN
+                                    onDownload(sharedFileWithDetails, pin)
                                 }
                                 showMenu = false
                             },
@@ -106,7 +106,7 @@ fun HomeCard(
                             onClick = {
                                 showPinDialog = true
                                 pinAction = { pin ->
-                                    onOpen(sharedFileWithDetails, pin) // Pass SharedFileWithDetails and PIN
+                                    onOpen(sharedFileWithDetails, pin)
                                 }
                                 showMenu = false
                             },

@@ -143,7 +143,6 @@ fun HomeUi(viewModel: HomeFileViewModel, onFabClick: (() -> Unit) -> Unit) {
                                     HomeCard(
                                         sharedFileWithDetails = sharedFileWithDetails,
                                         onDownload = { fileDetails, pin ->
-                                            // Ensure that both parameters are passed to downloadFile
                                             viewModel.downloadFile(
                                                 context = context,
                                                 sharedFileWithDetails = fileDetails,
@@ -151,7 +150,6 @@ fun HomeUi(viewModel: HomeFileViewModel, onFabClick: (() -> Unit) -> Unit) {
                                             )
                                         },
                                         onOpen = { fileDetails, pin ->
-                                            // Ensure both parameters are passed to openFile
                                             viewModel.openFile(
                                                 context = context,
                                                 sharedFileWithDetails = fileDetails,
@@ -210,7 +208,6 @@ fun HomeUi(viewModel: HomeFileViewModel, onFabClick: (() -> Unit) -> Unit) {
                                         ),
                                         elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
                                     ) {
-                                        // Updated infinite transition with label for inspection
                                         val infiniteTransition =
                                             rememberInfiniteTransition(label = "Loading Animation")
                                         val progress by infiniteTransition.animateFloat(
@@ -226,9 +223,8 @@ fun HomeUi(viewModel: HomeFileViewModel, onFabClick: (() -> Unit) -> Unit) {
                                             modifier = Modifier.fillMaxSize(),
                                             contentAlignment = Alignment.Center
                                         ) {
-                                            // Updated CircularProgressIndicator
                                             CircularProgressIndicator(
-                                                progress = { progress },  // Pass progress as lambda
+                                                progress = { progress },
                                                 strokeWidth = 4.dp,
                                                 strokeCap = StrokeCap.Round,
                                                 color = Color.Yellow,
