@@ -468,12 +468,18 @@ fun FileUi(
             },
             confirmButton = {
                 Button(onClick = {
-                    if (customPin.length == 6 && customPin.all { it.isDigit() }) {
+                    if (!useCustomPin && !useTimeLimitedSharing && !generateQRCode) {
+                        Toast.makeText(
+                            context,
+                            "Please select at least one option.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    } else if (useCustomPin && (customPin.length != 6 || !customPin.all { it.isDigit() })) {
+                        Toast.makeText(context, "PIN must be 6 digits", Toast.LENGTH_SHORT)
+                            .show()
+                    } else {
                         showShareDialog = false
                         showUserSelectionDialog = true
-                    } else {
-                        Toast.makeText(context, "PIN must be exactly 6 digits", Toast.LENGTH_SHORT)
-                            .show()
                     }
                 }, modifier = Modifier.fillMaxWidth()) {
                     Text(stringResource(R.string.share_now))
