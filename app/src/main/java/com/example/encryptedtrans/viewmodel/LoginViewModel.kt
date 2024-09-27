@@ -51,6 +51,7 @@ class LoginViewModel(private val auth: Auth) : ViewModel() {
                         loginState.copy(errorMessage = result.message)
 
                     }
+
                     else -> {
                         loginState.copy(errorMessage = "Unexpected response during login.")
                     }
@@ -65,22 +66,20 @@ class LoginViewModel(private val auth: Auth) : ViewModel() {
     }
 
 
-    fun signInWithGoogle(idToken: String) {
+    fun signInWithGoogle(email: String, idToken: String) {
         viewModelScope.launch {
             loginState = loginState.copy(isLoading = true, errorMessage = null)
             try {
-                val result = auth.signInWithGoogle(idToken)
-                loginState = when (result) {
-                    is Auth.AuthResult.Success -> {
-                        loginState.copy(isLoginSuccessful = true)
-                    }
-
-                    is Auth.AuthResult.Error -> {
-                        loginState.copy(errorMessage = result.message)
+                val (emailExists, isGoogleAccount) = auth.checkEmailAndGoogleAccount(email)
+                when {
+                    emailExists && !isGoogleAccount -> {
+                        loginState = loginState.copy(
+                            errorMessage = "An account with this email already exists. Please sign in with your email and password."
+                        )
                     }
 
                     else -> {
-                        loginState.copy(errorMessage = "Unexpected response during Google Sign-In.")
+                        proceedWithGoogleSignIn(idToken)
                     }
                 }
             } catch (e: Exception) {
@@ -88,6 +87,15 @@ class LoginViewModel(private val auth: Auth) : ViewModel() {
             } finally {
                 loginState = loginState.copy(isLoading = false)
             }
+        }
+    }
+
+    private suspend fun proceedWithGoogleSignIn(idToken: String) {
+        val result = auth.signInWithGoogle(idToken)
+        loginState = when (result) {
+            is Auth.AuthResult.Success -> loginState.copy(isLoginSuccessful = true)
+            is Auth.AuthResult.Error -> loginState.copy(errorMessage = result.message)
+            else -> loginState.copy(errorMessage = "Unexpected response during Google Sign-In.")
         }
     }
 

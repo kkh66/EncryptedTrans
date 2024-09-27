@@ -241,44 +241,79 @@ class UserProfileViewModel(private val auth: Auth, context: Context) : ViewModel
         }
     }
 
+    private fun resetPasswordState() {
+        currentPassword = ""
+        newPassword = ""
+        confirmNewPassword = ""
+        _profileState.update { it.copy(errorMessage = null) }
+    }
+
     fun changePassword() {
         viewModelScope.launch {
             _profileState.update { it.copy(isLoading = true, errorMessage = null) }
 
             if (!utils.validatePassword(newPassword)) {
                 _profileState.update {
-                    it.copy(errorMessage = "Password must contain at least 8 characters, including an uppercase letter, a lowercase letter, and a number.")
+                    it.copy(
+                        errorMessage = "Password must contain at least 8 characters, including an uppercase letter, a lowercase letter, and a number.",
+                        isLoading = false
+                    )
                 }
                 return@launch
             }
 
             if (!utils.passwordsMatch(newPassword, confirmNewPassword)) {
-                _profileState.update { it.copy(errorMessage = "Passwords do not match.") }
+                _profileState.update {
+                    it.copy(
+                        errorMessage = "Passwords do not match.",
+                        isLoading = false
+                    )
+                }
                 return@launch
             }
 
             try {
                 when (val result = auth.changePassword(currentPassword, newPassword)) {
                     is Auth.AuthResult.Success -> {
-                        _profileState.update { it.copy(isUpdateSuccessful = true) }
+                        _profileState.update {
+                            it.copy(isUpdateSuccessful = true)
+                        }
                         clearPasswordFields()
                     }
 
                     is Auth.AuthResult.Error -> {
-                        _profileState.update { it.copy(errorMessage = result.message) }
+                        _profileState.update {
+                            it.copy(
+                                errorMessage = result.message,
+                                isLoading = false
+                            )
+                        }
+                        resetPasswordState()
                     }
 
                     is Auth.AuthResult.PasswordResetSuccess -> {
-                        _profileState.update { it.copy(errorMessage = "Unexpected result: Password reset success") }
+                        _profileState.update {
+                            it.copy(
+                                errorMessage = "Password reset success",
+                                isLoading = false
+                            )
+                        }
+                        resetPasswordState()
                     }
                 }
             } catch (e: Exception) {
-                _profileState.update { it.copy(errorMessage = "Failed to change password: ${e.message}") }
+                _profileState.update {
+                    it.copy(
+                        errorMessage = "Failed to change password: ${e.message}",
+                        isLoading = false
+                    )
+                }
             } finally {
                 _profileState.update { it.copy(isLoading = false) }
             }
         }
     }
+
 
     private fun clearPasswordFields() {
         currentPassword = ""

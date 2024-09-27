@@ -13,6 +13,7 @@ import com.example.encryptedtrans.data.SharedFile
 import com.example.encryptedtrans.data.SharedFileWithDetails
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -41,6 +42,19 @@ class HomeFileViewModel(private val auth: Auth, context: Context) : ViewModel() 
     private val _pinRequired = MutableStateFlow<SharedFileWithDetails?>(null)
     val pinRequired: StateFlow<SharedFileWithDetails?> = _pinRequired.asStateFlow()
 
+    init {
+        getSharedFiles()
+    }
+
+    fun refreshFiles() {
+        viewModelScope.launch {
+            _homeState.update { it.copy(isLoading = true) }
+            delay(1000)
+            getSharedFiles()
+            _homeState.update { it.copy(isLoading = false) }
+        }
+    }
+
     val filteredSharedFilesList: StateFlow<List<SharedFileWithDetails>> = combine(
         _searchQuery,
         _homeState.map { it.sharedFiles }
@@ -54,9 +68,6 @@ class HomeFileViewModel(private val auth: Auth, context: Context) : ViewModel() 
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-    init {
-        getSharedFiles()
-    }
 
     fun getSharedFiles() {
         viewModelScope.launch {

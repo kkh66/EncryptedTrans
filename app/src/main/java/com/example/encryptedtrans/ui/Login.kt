@@ -118,13 +118,18 @@ fun LoginUi(
         val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
         try {
             val account = task.getResult(ApiException::class.java)
-            account?.idToken?.let { token ->
-                viewModel.signInWithGoogle(token)
+            val email = account?.email
+            val idToken = account?.idToken
+            if (email != null && idToken != null) {
+                viewModel.signInWithGoogle(email, idToken)
+            } else {
+                Toast.makeText(context, "Google Sign-In failed: Missing email or ID token.", Toast.LENGTH_SHORT).show()
             }
         } catch (e: ApiException) {
             Toast.makeText(context, googleFail, Toast.LENGTH_SHORT).show()
         }
     }
+
 
     Box(
         modifier = Modifier

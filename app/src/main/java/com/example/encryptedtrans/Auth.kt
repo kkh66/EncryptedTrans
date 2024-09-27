@@ -23,7 +23,7 @@ class Auth {
 
     /**
      * Register Account at the Authentication and then also at the Cloud Firestore
-     **/
+     */
     suspend fun registerUser(email: String, password: String, username: String): AuthResult {
         return try {
             val result = auth.createUserWithEmailAndPassword(email, password).await()
@@ -34,7 +34,8 @@ class Auth {
 
                 val userDoc = hashMapOf(
                     "username" to username,
-                    "email" to email
+                    "email" to email,
+                    "isGoogleAccount" to false
                 )
                 db.collection("users").document(firebaseUser.uid).set(userDoc).await()
 
@@ -45,6 +46,9 @@ class Auth {
         }
     }
 
+    /**
+     * Login Account using email and password
+     */
     suspend fun loginUser(email: String, password: String): AuthResult {
         return try {
             val result = auth.signInWithEmailAndPassword(email, password).await()
@@ -60,43 +64,61 @@ class Auth {
         }
     }
 
+    suspend fun checkEmailAndGoogleAccount(email: String): Pair<Boolean, Boolean> {
+        return try {
+            val querySnapshot = db.collection("users")
+                .whereEqualTo("email", email)
+                .limit(1)
+                .get()
+                .await()
+
+            if (querySnapshot.isEmpty) {
+                Pair(false, false)
+            } else {
+                val document = querySnapshot.documents.first()
+                val isGoogleAccount = document.getBoolean("isGoogleAccount") ?: false
+                Pair(true, isGoogleAccount)
+            }
+        } catch (e: Exception) {
+            Pair(false, false)
+        }
+    }
+
     suspend fun signInWithGoogle(idToken: String): AuthResult {
         return try {
             val credential = GoogleAuthProvider.getCredential(idToken, null)
+            val result = auth.signInWithCredential(credential).await()
+            val googleUser = result.user ?: throw Exception("Google Sign-In failed: User is null")
 
-            // Check if the user is already signed in
-            val user = auth.currentUser
-            if (user != null && user.email != null) {
-                // If the user is already logged in link Google to the account
-                user.linkWithCredential(credential).await()
-                AuthResult.Success(user)
+            val userDoc = db.collection("users").document(googleUser.uid).get().await()
+
+            if (!userDoc.exists()) {
+                val newUser = hashMapOf(
+                    "username" to (googleUser.displayName ?: "Unknown User"),
+                    "email" to (googleUser.email ?: ""),
+                    "isGoogleAccount" to true
+                )
+                db.collection("users").document(googleUser.uid).set(newUser).await()
             } else {
-                // Otherwise, sign in using Google
-                val result = auth.signInWithCredential(credential).await()
-                val googleUser = result.user ?: throw Exception("User is null")
-
-                // Check if the user document exists in Firestore
-                val userDoc = db.collection("users").document(googleUser.uid).get().await()
-                if (!userDoc.exists()) {
-                    val newUser = hashMapOf(
-                        "username" to (googleUser.displayName ?: "Unknown User"),
-                        "email" to (googleUser.email ?: "")
-                    )
-                    db.collection("users").document(googleUser.uid).set(newUser).await()
+                val existingEmail = userDoc.getString("email")
+                if (existingEmail != googleUser.email) {
+                    db.collection("users").document(googleUser.uid)
+                        .update("email", googleUser.email, "isGoogleAccount", true).await()
                 }
-
-                val username =
-                    userDoc.getString("username") ?: googleUser.displayName ?: "Unknown User"
-                googleUser.updateProfile(userProfileChangeRequest {
-                    displayName = username
-                }).await()
-
-                AuthResult.Success(googleUser)
             }
+
+            if (googleUser.displayName.isNullOrEmpty()) {
+                googleUser.updateProfile(userProfileChangeRequest {
+                    displayName = "Unknown User"
+                }).await()
+            }
+
+            AuthResult.Success(googleUser)
         } catch (e: Exception) {
-            AuthResult.Error(e.message ?: "An unknown error occurred")
+            AuthResult.Error(e.message ?: "An unknown error occurred during Google Sign-In.")
         }
     }
+
 
     suspend fun sendPasswordResetEmail(email: String): AuthResult {
         return try {
@@ -133,21 +155,18 @@ class Auth {
                 return AuthResult.Error("The new email is the same as the current email.")
             }
 
-
             val credential = EmailAuthProvider.getCredential(email, password)
             user.reauthenticate(credential).await()
 
-            val existingUser = db.collection("users")
-                .whereEqualTo("email", newEmail)
-                .get()
-                .await()
-
-            if (!existingUser.isEmpty) {
+            val (emailExists, _) = checkEmailAndGoogleAccount(newEmail)
+            if (emailExists) {
                 return AuthResult.Error("This email is already in use by another account.")
             }
 
-            user.verifyBeforeUpdateEmail(newEmail)
+            user.verifyBeforeUpdateEmail(newEmail).await()
 
+            val userDocRef = db.collection("users").document(user.uid)
+            userDocRef.update("email", newEmail).await()
 
             AuthResult.Success(user)
         } catch (e: Exception) {

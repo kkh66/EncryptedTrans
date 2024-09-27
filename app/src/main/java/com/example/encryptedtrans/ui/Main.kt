@@ -32,6 +32,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -67,8 +68,18 @@ fun MainUi(
     isDarkTheme: Boolean,
     onThemeChange: (Boolean) -> Unit
 ) {
+
     val mainNavController = rememberNavController()
     val context = LocalContext.current
+    val auth = Auth()
+    val isUserLoggedIn = remember { mutableStateOf(auth.isUserLoggedIn()) }
+
+    LaunchedEffect(Unit) {
+        if (!isUserLoggedIn.value) {
+            navController.navigate(EncryptedTransScreen.Login.name)
+        }
+    }
+
     val userProfileViewModel: UserProfileViewModel =
         viewModel { UserProfileViewModel(Auth(), context) }
     var fabAction by remember { mutableStateOf<(() -> Unit)?>(null) }
