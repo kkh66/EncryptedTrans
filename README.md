@@ -5,4 +5,4 @@ It is a scanning file and storage application.
 It base on the okhttp and retrofit to do the api call.
 
 The firebase do the storing part and auth.
-Pls change the <code>key</code> to your self firebase key
+Pls change to your firebase json file
